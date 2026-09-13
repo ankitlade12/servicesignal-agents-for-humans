@@ -128,8 +128,14 @@ def start_session(request: Request, response: Response):
             secrets.token_urlsafe(18),
         )
         c.execute(
-            "INSERT INTO workspaces(id,token_hash,public_id,created_at) VALUES(?,?,?,?)",
-            (workspace_id, hashlib.sha256(token.encode()).hexdigest(), public_id, time.time()),
+            "INSERT INTO workspaces(id,token_hash,public_id,created_at,clock_offset) VALUES(?,?,?,?,?)",
+            (
+                workspace_id,
+                hashlib.sha256(token.encode()).hexdigest(),
+                public_id,
+                time.time(),
+                datetime(2026, 9, 13, 12, tzinfo=timezone.utc).timestamp() - time.time(),
+            ),
         )
         c.execute("INSERT INTO publications(workspace_id) VALUES(?)", (workspace_id,))
         db.event(

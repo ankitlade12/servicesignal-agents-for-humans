@@ -32,7 +32,7 @@ The default `AGENT_PROVIDER=fixture` mode only recognizes the two built-in examp
 7. Advance the isolated demo clock to the reminder and expiration. Future arrangements remain unconfirmed until a new update is approved.
 8. Export the evidence from Activity. Reset deletes this workspace and invalidates its public link.
 
-After the example dates pass, enter future Tuesday sessions manually. The prototype intentionally rejects past temporary changes. The example dates match the hackathon scenario, not a moving claim of current service availability.
+Every isolated workspace starts its **demo clock at September 13, 2026**, so the fictional September scenario remains replayable throughout judging. The clock advances normally from there, or through the labeled demo controls. Past changes relative to that demo clock are rejected. Session expiry still uses real elapsed time. These dates never claim current real-world service availability.
 
 ## Live Strands configuration
 

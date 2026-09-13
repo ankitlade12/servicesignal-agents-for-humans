@@ -4,7 +4,7 @@ Verified locally on September 13, 2026. All scenarios use fictional data.
 
 ## Automated release checks
 
-**42 passed**, latest run **2.56 seconds**. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite.
+**43 passed**, latest local run **2.33 seconds**. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The additional replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
 
 `ruff check app tests scripts` and `node --check static/app.js` passed.
 
@@ -45,7 +45,7 @@ The HTTP report includes measured intake and approval-to-verification durations 
 
 ## Deployment and external publication
 
-The local process supervisor and persistent SQLite behavior were exercised. Dockerfile, Compose, and CI build configuration are supplied. A local Docker build could not run because the Docker daemon was unavailable. GitHub CI is configured to test and build the image once the repository is published.
+The local process supervisor and persistent SQLite behavior were exercised. Dockerfile and Compose are supplied. A local Docker build could not run because the Docker daemon was unavailable; the initial [GitHub CI run](https://github.com/ankitlade12/servicesignal-agents-for-humans/actions/runs/34787805402) passed dependency installation, tests, lint, JavaScript syntax, and Docker image build. CI now also starts the container and runs the real HTTP/worker smoke scenario. Check the latest [workflow result](https://github.com/ankitlade12/servicesignal-agents-for-humans/actions) for its outcome.
 
 A persistent cloud deployment, entrant's AWS Builder ID, public video upload, and final Devpost entry require the corresponding account access. No submission success or public hosting is implied by these local artifacts.
 

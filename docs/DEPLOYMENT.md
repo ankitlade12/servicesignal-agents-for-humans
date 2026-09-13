@@ -28,7 +28,7 @@ The health endpoint checks the API/database, not worker liveness. Monitor the wo
 - An actual HTTPS public origin before printing or distributing QR codes.
 - The entrant's AWS Builder ID and Devpost account for submission.
 
-No hosting resources or IAM policies were created by this implementation. The supplied Docker configuration must be built and tested on the intended host; local application verification does not prove cloud deployment readiness.
+No hosting resources or IAM policies were created by this implementation. The image build passed GitHub CI; the workflow also includes a running-container HTTP smoke test. Configure and test the intended persistent host separately; CI success does not establish a deployed service.
 
 ## Model access check
 

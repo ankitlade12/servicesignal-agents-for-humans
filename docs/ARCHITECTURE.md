@@ -36,6 +36,8 @@ At expiry, the worker prioritizes the approved fallback and cancels remaining in
 
 After successful initial publication, a recurring read-only verification job runs every 15 minutes. Drift stops verification and requests owner review; it does not automatically overwrite newer content. No additional model call is needed to compare known fields.
 
+Each workspace's fictional clock begins September 13, 2026 and advances from a stored offset, keeping the fixed scenario replayable during judging. Session lifetime, worker leases, and network timeouts use real time; program approval, due jobs, and expiration use the isolated demo clock.
+
 ## Deployment boundary
 
 This prototype runs one API and one worker on a persistent host, sharing the same SQLite file. The publisher is a distinct HTTP authorization boundary in the same API process. It is not represented as an independently hosted third-party system. Partner listing state is a labeled simulator record; its publication is not called independent live verification.

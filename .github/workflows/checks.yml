@@ -15,3 +15,12 @@ jobs:
       - run: uv run pytest -q
       - run: node --check static/app.js
       - run: docker build -t servicesignal:verify .
+      - name: Verify the running container end to end
+        run: |
+          docker run --detach --name servicesignal --publish 127.0.0.1:8017:8017 servicesignal:verify
+          trap 'docker logs servicesignal; docker stop servicesignal' EXIT
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:8017/api/health; then break; fi
+            sleep 1
+          done
+          PYTHONPATH=. uv run python scripts/http_smoke.py
