@@ -1,0 +1,99 @@
+{
+  "passed": true,
+  "provider": "fixture",
+  "live_model": false,
+  "intake_including_session_ms": 16,
+  "approval_to_verified_ms": 270,
+  "scenario": "actual HTTP intake, approval, worker publication, visible read-back, PDF, partner refusal, expiry",
+  "scope": "one fictional local run; not p95 or evidence of model quality or staff time saved",
+  "publication": {
+    "approved_at": 1789339323.082106,
+    "expired": false,
+    "facts": {
+      "dates": [
+        "2026-09-15",
+        "2026-09-22"
+      ],
+      "end_time": "20:00",
+      "kind": "relocation",
+      "location": "200 Sample Street",
+      "program": "Digital Basics",
+      "room": "Room B",
+      "start_time": "18:00",
+      "timezone": "America/Chicago"
+    },
+    "message": "Applies only to the sessions listed below. Other activities are unchanged.",
+    "public_id": "V04ap_WWtjd3Pq3nyDil3fFz",
+    "revision": 2
+  },
+  "actions": [
+    {
+      "id": "_605e-8Phg8RrE15TWO0tg",
+      "change_id": "bn1LVnZZXSpXGW_n3AAbgA",
+      "revision": 2,
+      "destination": "page",
+      "state": "VERIFIED",
+      "detail": "Fresh HTTP read matched every approved visible field.",
+      "verified_at": 1789339323.170295,
+      "observed_hash": "72814dc44a99c4ce7fa717b314f077cde2e5c7feabc5456c06168d9c80b72a79",
+      "observed_payload": "{\"program\": \"Digital Basics\", \"message\": \"Applies only to the sessions listed below. Other activities are unchanged.\", \"dates\": \"Sep 15, 2026; Sep 22, 2026\", \"start_time\": \"18:00\", \"end_time\": \"20:00\", \"timezone\": \"America/Chicago\", \"location\": \"200 Sample Street\", \"room\": \"Room B\", \"kind\": \"Temporary venue change\", \"expired\": \"Only the listed sessions are affected\"}",
+      "attempts": 1
+    },
+    {
+      "id": "GHYwjFlXJFpxuGUC5kpXMQ",
+      "change_id": "bn1LVnZZXSpXGW_n3AAbgA",
+      "revision": 2,
+      "destination": "flyer",
+      "state": "REPLACEMENT_READY",
+      "detail": "Printable notice is available. Distribution has not been verified.",
+      "verified_at": null,
+      "observed_hash": null,
+      "observed_payload": null,
+      "attempts": 0
+    },
+    {
+      "id": "38DgJKf-UAaYkWq04JqmOA",
+      "change_id": "bn1LVnZZXSpXGW_n3AAbgA",
+      "revision": 2,
+      "destination": "partner",
+      "state": "NEEDS_OWNER",
+      "detail": "Simulated partner: awaiting editor publication. No external message sent.",
+      "verified_at": null,
+      "observed_hash": null,
+      "observed_payload": null,
+      "attempts": 0
+    },
+    {
+      "id": "05FG9Unc3Hjqu9S0y81l8g",
+      "change_id": "bn1LVnZZXSpXGW_n3AAbgA",
+      "revision": 2,
+      "destination": "print",
+      "state": "NEEDS_OWNER",
+      "detail": "A person must replace printed copies.",
+      "verified_at": null,
+      "observed_hash": null,
+      "observed_payload": null,
+      "attempts": 0
+    }
+  ],
+  "expired_publication": {
+    "approved_at": 1789339323.082106,
+    "expired": true,
+    "facts": {
+      "dates": [
+        "2026-09-15",
+        "2026-09-22"
+      ],
+      "end_time": "20:00",
+      "kind": "relocation",
+      "location": "200 Sample Street",
+      "program": "Digital Basics",
+      "room": "Room B",
+      "start_time": "18:00",
+      "timezone": "America/Chicago"
+    },
+    "message": "This temporary arrangement has ended. Details for future sessions need confirmation.",
+    "public_id": "V04ap_WWtjd3Pq3nyDil3fFz",
+    "revision": 2
+  }
+}

@@ -1,0 +1,5 @@
+*.pdf binary
+*.png binary
+*.mp4 binary
+*.webm binary
+*.md whitespace=-blank-at-eol

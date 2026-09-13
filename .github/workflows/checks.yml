@@ -1,0 +1,17 @@
+name: Verify prototype
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.5"
+      - run: uv sync --frozen
+      - run: uv run ruff check app tests scripts
+      - run: uv run pytest -q
+      - run: node --check static/app.js
+      - run: docker build -t servicesignal:verify .

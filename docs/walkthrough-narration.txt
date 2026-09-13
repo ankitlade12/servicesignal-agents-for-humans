@@ -1,0 +1,13 @@
+When a community class moves, one small change can leave several outdated notices behind. ServiceSignal helps community coordinators keep people informed.
+
+This fictional demonstration uses a labeled guided example. Live model access is still pending.
+
+The coordinator pastes a two-session venue change, reviews the source, and confirms the exact dates, address, room, and hours. Editing a fact disables approval until a new plan is saved.
+
+After approval, a background worker publishes the real website and independently reads its visible facts back. Only a match becomes verified.
+
+Residents can open the notice without an account and use its permanent QR link. Partner editing is simulated, and printed copies remain a separate manual task.
+
+When the temporary arrangement ends, the workflow asks what happens next. It publishes the approved fallback instead of guessing that the previous venue is correct.
+
+Our next step is a real coordinator pilot to measure time saved and information accuracy.
