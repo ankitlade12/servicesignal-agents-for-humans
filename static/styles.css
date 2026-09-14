@@ -20,3 +20,6 @@ fieldset{border:0;padding:0;margin:0;min-width:0}fieldset:disabled{opacity:.7}.c
 
 @media(min-width:601px){.sidebar{overflow-y:auto}.sidebar>*{flex-shrink:0}}
 @media(max-width:600px){.sidebar nav{overflow-x:auto;justify-content:flex-start}.nav-item{flex:0 0 44px}}
+.footer,.public-footer,.nav-label{color:#596550}.footer{font-size:11px}
+
+.hero .eyebrow,.hero p,.stat-top{color:#526044}.tip p{color:#756047}

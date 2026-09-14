@@ -34,6 +34,13 @@ signal.signal(signal.SIGTERM, stop)
 signal.signal(signal.SIGINT, stop)
 exit_code = 0
 try:
+    # Finish initial schema and optional one-time owner setup before starting child processes.
+    sys.path.insert(0, str(Path.cwd()))
+    from app import accounts, db
+
+    db.init()
+    if accounts.bootstrap_initial_owner():
+        print("Initial owner setup invitation created; expires in 24 hours.", flush=True)
     children.append(subprocess.Popen([sys.executable, "-m", "app.worker"]))
     children.append(subprocess.Popen([sys.executable, "-m", "app.operations"]))
     children.append(subprocess.Popen([sys.executable, "-m", "app.delivery"]))

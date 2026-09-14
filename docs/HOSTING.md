@@ -28,7 +28,9 @@ The launcher derives the public origin from RENDER_EXTERNAL_URL and honors PORT.
 
 ## Initial owner setup
 
-Create a private, single-use owner invitation from the service shell. This leaves the initial program unconfigured and inaccessible publicly until the owner confirms real facts.
+For an empty installation without shell access, generate a random token with `secrets.token_urlsafe(32)` and configure SERVICESIGNAL_BOOTSTRAP_TOKEN, BOOTSTRAP_OWNER_EMAIL and BOOTSTRAP_ORGANIZATION privately in the hosting environment. The launcher creates one email-bound owner invitation before starting the workers. Open `https://YOUR_DOMAIN/#join=TOKEN` within 24 hours and choose your own password. After startup confirms creation, clear the bootstrap token from the hosting environment. Only its hash remains in the database; a persistent marker prevents reissuing it on restart. Never expose the token in logs, commits or screenshots.
+
+Alternatively, create a private, single-use owner invitation from the service shell. This leaves the initial program unconfigured and inaccessible publicly until the owner confirms real facts.
 
 ```bash
 PYTHONPATH=. .venv/bin/python scripts/create_owner_invitation.py \

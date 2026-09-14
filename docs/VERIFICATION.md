@@ -4,7 +4,7 @@ Verified locally on September 13, 2026. All scenarios use fictional data.
 
 ## Automated release checks
 
-**99 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
+**101 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
 
 `ruff check app tests scripts` and `node --check static/app.js` passed.
 
@@ -47,7 +47,11 @@ The HTTP report includes measured intake and approval-to-verification durations 
 
 The local process supervisor and persistent SQLite behavior were exercised. Dockerfile and Compose are supplied. A local Docker build could not run because the Docker daemon was unavailable; the initial [GitHub CI run](https://github.com/ankitlade12/servicesignal-agents-for-humans/actions/runs/34787805402) passed dependency installation, tests, lint, JavaScript syntax, and Docker image build. CI now also starts the container and runs the real HTTP/worker smoke scenario. Check the latest [workflow result](https://github.com/ankitlade12/servicesignal-agents-for-humans/actions) for its outcome.
 
-A persistent cloud deployment, entrant's AWS Builder ID, public video upload, and final Devpost entry require the corresponding account access. No submission success or public hosting is implied by these local artifacts.
+The Railway pilot is available at https://servicesignal-production.up.railway.app with a persistent `/app/data` volume and secure cookies. HTTPS health and readiness checks passed, and the private workspace API rejected unauthenticated access. The hosted provider is still `fixture`; no live AI execution is implied. Initial owner onboarding and authenticated hosted acceptance remain outstanding. AWS Builder ID, public video upload and Devpost submission still require the entrant's account actions.
+
+The release adds an eight-process fresh-database initialization test after the first cloud start exposed a migration race. A process file lock now serializes schema changes. Single-use owner bootstrap tests cover repeated startup, email binding, token reuse rejection and an initially unconfigured program.
+
+`artifacts/accessibility-check.json` records zero automated axe violations for overview, programs, account/team and new-update views at a mobile viewport. Manual-review items remain; this is not WCAG certification.
 
 ## Walkthrough recording
 

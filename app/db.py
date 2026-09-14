@@ -34,6 +34,18 @@ def connect(write=False):
 
 
 def init():
+    # API, workers and operator tools can all start together on a new volume.
+    # Hold a process-shared lock across executescript's implicit commits.
+    import fcntl
+
+    Path(path()).parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(path() + ".migration-lock", os.O_RDWR | os.O_CREAT, 0o600)
+    with os.fdopen(descriptor, "w") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        _init()
+
+
+def _init():
     Path(path()).parent.mkdir(parents=True, exist_ok=True)
     with connect() as c:
         c.execute("PRAGMA journal_mode=WAL")

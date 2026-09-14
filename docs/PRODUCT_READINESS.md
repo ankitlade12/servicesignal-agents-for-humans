@@ -1,6 +1,6 @@
 # Product readiness and requirement audit
 
-ServiceSignal implements a complete controlled publication workflow and an invite-only organization pilot mode. No consenting organization, resident usage, successful live model evaluation, or public cloud deployment has been established. This audit records implementation boundaries, not production certification.
+ServiceSignal implements a complete controlled publication workflow and an invite-only organization pilot mode. No consenting organization, resident usage, or successful live model evaluation has been established. This audit records implementation boundaries, not production certification.
 
 English is the default. Spanish is optional and off; the earlier PRD's bilingual requirement is superseded by the current English-first scope. Enable additional language coverage only after validating audience need and reviewing the templates.
 
@@ -31,12 +31,12 @@ English is the default. Spanish is optional and off; the earlier PRD's bilingual
 
 | Area | Current status |
 |---|---|
-| Automated verification | 99 passing tests; lint and JS syntax checks; real browser and separate-process HTTP flow |
+| Automated verification | 101 passing tests; lint and JS syntax checks; real browser and separate-process HTTP flow |
 | Live AI | Strands adapters for OpenAI, Anthropic and Bedrock. Real SDK contract passes against a local fixture. No successful live invocation or quality score |
 | Evaluation | Twelve labeled synthetic development cases and runnable evaluator; no held-out 40-case study or manual/LLM baseline comparison |
-| Accessibility | Semantic labels, keyboard focus, responsive views and basic browser checks; full WCAG/PDF audit absent |
+| Accessibility | Semantic labels, keyboard focus and responsive views; automated axe checks found no violations on four tested mobile views, with manual-review items remaining; full WCAG/PDF audit absent |
 | Data exchange | No HSDS export or import adapter |
-| Deployment | Persistent single-host API/worker and SQLite; container and CI supplied; no running cloud service |
+| Deployment | Railway HTTPS pilot with persistent volume; API and worker readiness passed; owner setup and authenticated hosted acceptance remain |
 | Account lifecycle | Operator owner provisioning/recovery; owner invites editor/viewer and revokes access; single-use initial-owner setup; no public signup or separate mailbox-verification workflow |
 | Data lifecycle | Explicit source retention and WAL-safe backup/isolated restore; scheduled encrypted snapshots, optional S3 upload and explicit retention configuration; live off-host storage still unconfigured |
 | Performance and cost | Model call caps, bounded invocations/uploads, limited concurrent parsing/password derivation; no load-tested capacity or measured live cost |

@@ -334,3 +334,58 @@ def test_wordpress_dedicated_page_preview_write_and_public_readback(
     result = c.get("/api/delivery/status").json()["deliveries"][0]
     assert result["state"] == ("NEEDS_OWNER" if changed_after_preview else "VERIFIED")
     assert remote["writes"] == (0 if changed_after_preview else 1)
+
+
+def test_fresh_database_initialization_is_safe_across_processes(tmp_path):
+    import os
+    import subprocess
+    import sys
+
+    target = tmp_path / "concurrent.sqlite"
+    environment = {**os.environ, "SERVICESIGNAL_DB": str(target)}
+    processes = [
+        subprocess.Popen(
+            [sys.executable, "-c", "from app import db; db.init()"],
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        for _ in range(8)
+    ]
+    for process in processes:
+        out, error = process.communicate(timeout=20)
+        assert process.returncode == 0, error.decode()
+    import sqlite3
+
+    with sqlite3.connect(target) as connection:
+        assert connection.execute("PRAGMA quick_check").fetchone()[0] == "ok"
+        columns = {r[1] for r in connection.execute("PRAGMA table_info(users)")}
+        assert {"mfa_secret", "recovery_codes", "mfa_last_step"}.issubset(columns)
+
+
+def test_cloud_owner_bootstrap_is_one_time_email_bound_and_private(client, monkeypatch):
+    from app import accounts
+
+    monkeypatch.setenv("SERVICESIGNAL_MODE", "pilot")
+    token = "test-only-bootstrap-token-" + "a" * 32
+    monkeypatch.setenv("SERVICESIGNAL_BOOTSTRAP_TOKEN", token)
+    monkeypatch.setenv("BOOTSTRAP_OWNER_EMAIL", "cloud-owner@example.test")
+    monkeypatch.setenv("BOOTSTRAP_ORGANIZATION", "Cloud Test Library")
+    accounts.bootstrap_initial_owner()
+    accounts.bootstrap_initial_owner()
+    with db.connect() as connection:
+        assert connection.execute("SELECT count(*) FROM organizations").fetchone()[0] == 1
+        row = connection.execute("SELECT * FROM invitations").fetchone()
+        assert row["token_hash"] != token and row["role"] == "owner"
+    body = {"token": token, "email": "wrong@example.test", "name": "Cloud owner", "password": PASSWORD}
+    assert client.post("/api/account/accept", json=body).status_code == 400
+    body["email"] = "cloud-owner@example.test"
+    assert client.post("/api/account/accept", json=body).status_code == 200
+    assert client.post("/api/account/accept", json=body).status_code == 400
+    accounts.bootstrap_initial_owner()
+    assert (
+        client.post("/api/account/login", json={"email": body["email"], "password": PASSWORD}).status_code
+        == 200
+    )
+    assert data(client)["actor"]["role"] == "owner"
+    assert data(client)["program"]["configured"] is False

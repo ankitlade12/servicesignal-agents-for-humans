@@ -14,7 +14,7 @@ ServiceSignal explores this workflow for a fictional community center's Digital 
 
 ## What it does
 
-The coordinator configures a program, pastes a change or uploads a text-based PDF, reviews source evidence, supplies missing details, and approves the exact affected sessions and destinations. The background worker publishes the controlled website and independently reads its rendered facts back. It prepares an English printable notice and permanent QR link, while tracking simulated partner work and manual print replacement separately.
+The coordinator configures a program, pastes a change or uploads a text or scanned PDF, reviews source evidence, supplies missing details, and approves the exact affected sessions and destinations. The background worker publishes the controlled website and independently reads its rendered facts back. It prepares an English printable notice and permanent QR link, while tracking simulated partner work and manual print replacement separately.
 
 Before the final affected session ends, the workflow requests a new decision. If no new arrangement is approved, it publishes the previously approved unconfirmed-state notice. It never silently restores a potentially outdated venue.
 
@@ -47,7 +47,7 @@ Official deadline: **September 14, 2026, 5 p.m. PDT / 7 p.m. CDT / September 15,
 | Working controlled publication and verification | Implemented; see verification evidence |
 | Live Strands execution | OpenAI key pending; earlier Bedrock permission/Anthropic credit failures; live smoke not passed |
 | Public repository URL | https://github.com/ankitlade12/servicesignal-agents-for-humans |
-| Persistent hosted demo | Hosting account/destination still required |
+| Persistent hosted demo | Railway invite-only pilot: https://servicesignal-production.up.railway.app; judge access still needs provisioning |
 | Demo video | `artifacts/guided-walkthrough.mp4`, narrated guided demo, 61.1 seconds; must include live execution before submission |
 | Public YouTube/Vimeo video URL | Account/upload required |
 | Entrant's AWS Builder ID | Must be supplied by entrant |

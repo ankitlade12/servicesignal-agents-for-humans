@@ -408,3 +408,43 @@ def select_program(workspace_id: str, request: Request):
             "UPDATE sessions SET workspace_id=? WHERE token_hash=?", (workspace_id, actor["token_hash"])
         )
     return {"selected": True}
+
+
+def bootstrap_initial_owner():
+    """One-time cloud bootstrap from operator-configured environment; never public signup."""
+    token = os.getenv("SERVICESIGNAL_BOOTSTRAP_TOKEN")
+    email = os.getenv("BOOTSTRAP_OWNER_EMAIL")
+    if not token or not email:
+        return
+    if len(token) < 43 or len(token) > 100:
+        raise ValueError("The one-time bootstrap token must contain 43–100 random characters.")
+    email = normalize_email(email)
+    organization = os.getenv("BOOTSTRAP_ORGANIZATION", "ServiceSignal Workspace")
+    if not 2 <= len(organization) <= 120 or any(ord(c) < 32 for c in organization):
+        raise ValueError("Use a valid bootstrap organization name.")
+    with db.connect(write=True) as c:
+        if c.execute("SELECT 1 FROM settings WHERE key='initial_owner_setup_issued'").fetchone():
+            return
+        if c.execute("SELECT 1 FROM organizations LIMIT 1").fetchone():
+            raise ValueError(
+                "Automatic bootstrap is available only on an empty installation. Use the operator invitation command for an existing installation."
+            )
+        org_id = secrets.token_urlsafe(16)
+        c.execute("INSERT INTO organizations VALUES(?,?,?)", (org_id, organization, time.time()))
+        create_workspace(
+            c, org_id, {**PROGRAM, "name": "New program", "organization": organization, "configured": False}
+        )
+        c.execute(
+            "INSERT INTO invitations VALUES(?,?,?,?,?,0)",
+            (token_hash(token), org_id, email, "owner", time.time() + 86400),
+        )
+        c.execute("INSERT INTO settings VALUES('initial_owner_setup_issued',?)", (str(time.time()),))
+        record(
+            c,
+            org_id,
+            None,
+            "OWNER_SETUP_ISSUED",
+            "One-time operator-configured initial owner invitation created.",
+        )
+
+    return True

@@ -4,7 +4,7 @@
 
 A working application with a fictional demo and an authenticated pilot mode for the **Agents for Humans · Good Neighbor Agents** track. ServiceSignal helps a community-center coordinator manage temporary class changes across an owned website, printable notices, partner-owner follow-up, and printed-copy tasks. Partner simulation is available only in demo mode.
 
-[Source repository](https://github.com/ankitlade12/servicesignal-agents-for-humans) · [Narrated guided walkthrough](artifacts/guided-walkthrough.mp4) · [Submission readiness](docs/SUBMISSION.md)
+[Hosted pilot](https://servicesignal-production.up.railway.app) · [Source repository](https://github.com/ankitlade12/servicesignal-agents-for-humans) · [Narrated guided walkthrough](artifacts/guided-walkthrough.mp4) · [Submission readiness](docs/SUBMISSION.md)
 
 ![Coordinator overview](artifacts/overview-desktop.png)
 
