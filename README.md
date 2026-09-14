@@ -36,7 +36,7 @@ Every isolated workspace starts its **demo clock at September 13, 2026**, so the
 
 ## Organization pilot mode
 
-Set `SERVICESIGNAL_MODE=pilot` in `.env` before starting. An operator provisions the organization owner; there is no public signup.
+Set `SERVICESIGNAL_MODE=pilot` in `.env` before starting. [Initial owner invitations and cloud setup](docs/HOSTING.md) are available for Railway/Render. An operator provisions the organization owner; there is no public signup.
 
 ```bash
 PYTHONPATH=. uv run python scripts/manage_accounts.py create-organization \
@@ -90,13 +90,22 @@ This is still a Strands agent. The configured development key reached Anthropic,
 
 The agent uses `read_source` and `get_program_context`, then produces a Pydantic-validated proposal. It cannot access publisher credentials or send messages. Application code validates dates and scope, records coordinator confirmation, binds approval to an immutable plan hash, and enqueues work. Invocations have a 90-second deadline, six-turn limit, and token limits. Live calls are capped per workspace and per UTC day.
 
+## Expanded release
+
+- Authenticator-based two-factor sign-in, single-use recovery codes and expiring email password reset (SMTP optional); operator recovery remains available.
+- Independent pilot notices for different session dates, with separate publication, verification, expiry, URLs and PDFs. Overlapping replacements cannot silently drop dates.
+- Scanned-PDF OCR using a bounded Tesseract process, with original-document preservation and required human fact confirmation.
+- Scheduled encrypted backups, optional off-host S3-compatible copies, explicit retention configuration and operational status.
+- Railway deployment configuration and a Render Blueprint with persistent storage. See [hosting setup](docs/HOSTING.md).
+- Optional owner-approved SMTP, Twilio and dedicated WordPress-page adapters. These are disabled and hidden from navigation until configured; none is required for the core product. See [optional integrations](docs/OPTIONAL_INTEGRATIONS.md).
+
 ## Implemented
 
 - Responsive coordinator overview, intake, source evidence, fact review, approval, delivery tracking, program, public-notice, and activity screens.
 - Persistent organization accounts, owner/editor/viewer roles, invitations, revocation, password changes, named approval records, and multiple programs in pilot mode.
 - Confirmed program baselines, recurring weekdays, IANA timezone, venue, hours, and public contacts. Pilot baseline edits cannot rewrite existing approved notices; demo setup locks after the first draft.
 - Registered partner and print owners, reference URL and placement notes, snapshotted into each reviewed plan. No external URL is fetched or written.
-- Private text-PDF intake up to 3 pages / 5 MB / 6,000 extracted characters; original bytes, content hash, page-marked extraction, deduplication, and original download. Bounded subprocess parsing rejects scanned, encrypted, malformed, oversized, and overlong documents.
+- Private text/scanned-PDF intake up to 3 pages / 5 MB / 6,000 extracted characters; original bytes, content hash, page-marked extraction, deduplication, and original download. Bounded parsing and OCR reject encrypted, unreadable, malformed, oversized, and overlong documents.
 - Baseline/proposal comparison, page/line evidence references, private revision-bound PDF preview before approval, and preservation of entered form values after validation errors.
 - Worker readiness endpoint and UI warning; resident HTML/PDF show the approved expiration fallback even when the worker is stopped.
 - Source deduplication, persistent clarifications through explicit fact entry, and optimistic revision checks.
@@ -112,11 +121,11 @@ The agent uses `read_source` and `get_program_context`, then produces a Pydantic
 
 ## Scope and known limits
 
-The demo uses fictional data; no real organization has piloted the product. Pilot mode supports multiple organizations/programs on one persistent host, **four fixed surfaces and one active public notice per program**. Replacement approval supersedes the previous notice and its entire session list.
+The demo uses fictional data; no real organization has piloted the product. Pilot mode supports multiple organizations/programs on one persistent host, **four core surface types and multiple independent notices for different dates**. Pilot replacements require explicit acknowledgment for overlapping dates and must preserve all dates covered by the replaced notice. The fictional demo retains its original single-active-notice story.
 
-The original [PRD](ServiceSignal_PRD.md) is broader than this implementation. OCR, arbitrary discovery, real partner/email/SMS integrations, PostgreSQL/S3, and HSDS export remain deferred. English is the initial language; Spanish is optional based on demonstrated community need, not a launch requirement. The frontend uses plain browser JavaScript and system fonts; SQLite requires exactly one API/worker pair with shared persistent storage.
+The original [PRD](ServiceSignal_PRD.md) is broader than this implementation. Arbitrary discovery, directory-specific adapters, PostgreSQL migration, and HSDS exchange remain deferred. Optional WordPress/email/SMS adapters and S3-compatible backup upload are implemented, with credentials and live destination validation still required. English is the initial language; Spanish is optional based on demonstrated community need, not a launch requirement. The frontend uses plain browser JavaScript and system fonts; SQLite requires exactly one API/worker pair with shared persistent storage.
 
-Sources and original PDFs stay private to authorized workspace members. Public links expose approved facts and confirmed baseline information. Demo links expire after seven days or reset; pilot links remain available after logout. Pilot accounts use scrypt password hashing, expiring HttpOnly sessions, role checks and login limits. MFA, managed identity, self-service recovery, an independent security review, scheduled off-host backups, and deployment-specific monitoring remain operational work. No resident identity is collected.
+Sources and original PDFs stay private to authorized workspace members. Public links expose approved facts and confirmed baseline information. Demo links expire after seven days or reset; pilot links remain available after logout. Pilot accounts use scrypt password hashing, expiring HttpOnly sessions, role checks and login limits. TOTP MFA, email recovery, encrypted scheduled backups and operational status are implemented. Managed identity, independent security/accessibility review, actual off-host backup configuration, and alert-recipient setup remain operational work. No resident identity is collected.
 
 The QR link reflects the latest publication; already printed text and forwarded screenshots remain outside automated control. PDF accessibility is not certified. Verification records what was observed at a timestamp; worker/network downtime can delay writes and monitoring. A running API independently serves the approved expiration fallback after the final session; it does not mark that transition as worker-verified. Generated PDFs are tested for factual consistency, not arbitrary layouts or all languages.
 

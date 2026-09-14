@@ -4,7 +4,7 @@ Verified locally on September 13, 2026. All scenarios use fictional data.
 
 ## Automated release checks
 
-**87 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
+**99 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
 
 `ruff check app tests scripts` and `node --check static/app.js` passed.
 
@@ -79,3 +79,9 @@ A separate pilot API and worker ran against an isolated fictional database on lo
 Artifacts: `pilot-login.png`, `pilot-team.png`, `pilot-mobile.png`, and `release-demo.png`. All identities and service information in these images are fictional. This is local verification, not a real organization pilot or an independently audited authentication system. English remains the default; optional Spanish tests establish template consistency, not professional linguistic or accessibility acceptance.
 
 The authenticated separate-process HTTP smoke also passed locally (`artifacts/pilot-http-smoke.json`). CI runs this scenario against a second container in pilot mode, including operator bootstrap from the image, login, unconfigured-public-page rejection, baseline confirmation, named approval, worker read-back, English PDF, disabled Spanish route, unapproved follow-up, forbidden demo reset, and public access after logout.
+
+## Expanded features
+
+Twelve new tests pass for TOTP enrollment, replay rejection, single-use recovery codes, encrypted email reset and retained MFA, independent date-disjoint notices, overlap protection, owner-approved email, uncertain-send handling, Twilio status polling, WordPress pre-write conflict/public read-back, encrypted backup/restore and corrupted-file rejection, and actual scanned-PDF OCR. Provider-specific tests use simulated HTTP/SMTP responses; no real external message or CMS write was sent.
+
+Browser verification exposed a short-desktop sidebar clipping issue after adding account controls. Scrollable desktop navigation fixes it. Login, account-security forms, Connections loading, disabled provider controls, operational status and 390px mobile layout were inspected; no browser exceptions were reported. Optional delivery navigation is now hidden when providers are unconfigured, per the current product scope.

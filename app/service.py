@@ -134,9 +134,17 @@ def approve(workspace_id, change_id, revision, plan_hash, replace_current=False,
         if version != change["expected_version"]:
             raise HTTPException(409, "The destination changed. Reconfirm the facts to refresh the plan.")
         current = c.execute(
-            "SELECT id FROM changes WHERE workspace_id=? AND id!=? AND approved_at IS NOT NULL AND state!='SUPERSEDED'",
+            "SELECT id,facts FROM changes WHERE workspace_id=? AND id!=? AND approved_at IS NOT NULL AND state!='SUPERSEDED'",
             (workspace_id, change_id),
         ).fetchall()
+        if ws["org_id"]:
+            dates = set(json.loads(change["facts"])["dates"])
+            current = [old for old in current if dates.intersection(json.loads(old["facts"])["dates"])]
+            if any(set(json.loads(old["facts"])["dates"]) - dates for old in current):
+                raise HTTPException(
+                    409,
+                    "An existing notice overlaps these dates. Include all its dates in the replacement so no sessions are silently dropped.",
+                )
         if current and not replace_current:
             raise HTTPException(
                 409, "Confirm that this plan replaces the previous notice and its affected sessions."
@@ -146,6 +154,7 @@ def approve(workspace_id, change_id, revision, plan_hash, replace_current=False,
             raise HTTPException(422, "The affected sessions have ended. Create a new plan.")
         for previous in current:
             c.execute("UPDATE changes SET state='SUPERSEDED' WHERE id=?", (previous[0],))
+            c.execute("DELETE FROM notice_publications WHERE change_id=?", (previous[0],))
             c.execute("UPDATE jobs SET state='CANCELED' WHERE change_id=? AND state!='DONE'", (previous[0],))
             c.execute(
                 "UPDATE actions SET state='CANCELED',detail='Superseded by a new approved notice.' WHERE change_id=?",
@@ -217,7 +226,11 @@ def publish_job(job_id, key):
         ws = c.execute("SELECT * FROM workspaces WHERE id=?", (change["workspace_id"],)).fetchone()
         if digest(plan_for(change, ws["public_id"])) != change["plan_hash"]:
             raise HTTPException(409, "Approved facts or destinations changed.")
-        pub = c.execute("SELECT * FROM publications WHERE workspace_id=?", (ws["id"],)).fetchone()
+        pub = dict(c.execute("SELECT * FROM publications WHERE workspace_id=?", (ws["id"],)).fetchone())
+        if ws["org_id"]:
+            own = c.execute("SELECT * FROM notice_publications WHERE change_id=?", (change["id"],)).fetchone()
+            pub["action_key"] = own["action_key"] if own else None
+            pub["payload"] = own["payload"] if own else None
         expired = job["kind"] == "expire"
         action_key = f"{change['id']}:{change['revision']}:{job['kind']}"
         if pub["action_key"] == action_key:
@@ -233,9 +246,11 @@ def publish_job(job_id, key):
                 raise HTTPException(409, "The temporary arrangement has not ended.")
             # Expiry may replace either the approved base or this change's own publication only.
             allowed = (None, f"{change['id']}:{change['revision']}:publish")
-            if pub["action_key"] not in allowed and pub["version"] != change["expected_version"]:
+            if pub["action_key"] not in allowed and (
+                ws["org_id"] or pub["version"] != change["expected_version"]
+            ):
                 raise HTTPException(409, "A newer notice prevents this expiration write.")
-        elif pub["version"] != change["expected_version"]:
+        elif not ws["org_id"] and pub["version"] != change["expected_version"]:
             raise HTTPException(409, "Destination version conflict.")
         payload = fact_payload(
             json.loads(change["facts"]),
@@ -246,6 +261,11 @@ def publish_job(job_id, key):
             db.approved_context(change, ws),
         )
         payload["demo"] = not bool(ws["org_id"])
+        if ws["org_id"]:
+            c.execute(
+                "INSERT INTO notice_publications VALUES(?,?,?,?) ON CONFLICT(change_id) DO UPDATE SET payload=excluded.payload,action_key=excluded.action_key",
+                (change["id"], ws["id"], canonical(payload), action_key),
+            )
         c.execute(
             "UPDATE publications SET version=version+1,payload=?,action_key=? WHERE workspace_id=?",
             (canonical(payload), action_key, ws["id"]),

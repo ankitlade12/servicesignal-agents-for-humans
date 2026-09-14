@@ -135,3 +135,17 @@ def flyer_pdf(payload, url, draft=False, language="en"):
     )
     doc.build(story)
     return out.getvalue()
+
+
+def render_collection(items, public_id, language="en"):
+    """Separate date-scoped notices; never merge incompatible facts into one notice."""
+    esc = html.escape
+    context = items[0][1]["program_context"]
+    cards = []
+    for change_id, payload in items:
+        selected = language if language == "en" or payload["program_context"].get("spanish_enabled") else "en"
+        values = visible_facts(payload, selected)
+        cards.append(
+            f'<article class="notice-facts" lang="{selected}"><h2>{esc(values["dates"])}</h2><p>{esc(values["message"])}</p><p>{esc(values["start_time"])}–{esc(values["end_time"])} {esc(values["timezone"])}</p><p>{esc(values["location"])} · {esc(values["room"])}</p><a class="button" href="/notices/{public_id}/changes/{change_id}?lang={selected}">Open this notice and printable flyer</a></article>'
+        )
+    return f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(context["name"])} notices</title><link rel="stylesheet" href="/static/styles.css?v={asset_version()}"></head><body class="public-body"><main class="public-notice"><h1>{esc(context["name"])}</h1><p>{esc(context["organization"])}</p><p>Each notice applies only to its listed sessions. Open a notice for its confirmed details and current status.</p>{"".join(cards)}</main></body></html>'

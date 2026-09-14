@@ -117,6 +117,9 @@ def init():
             created_at REAL NOT NULL, UNIQUE(workspace_id, sha256)
         );
         """)
+        from .release_schema import migrate
+
+        migrate(c)
         c.execute("INSERT OR IGNORE INTO settings VALUES ('publisher_key', ?)", (secrets.token_urlsafe(40),))
 
 

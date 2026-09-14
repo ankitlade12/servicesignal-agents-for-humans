@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: servicesignal
+    runtime: docker
+    plan: 1c-2g
+    healthCheckPath: /api/ready
+    numInstances: 1
+    disk:
+      name: servicesignal-data
+      mountPath: /app/data
+      sizeGB: 5
+    envVars:
+      - key: SERVICESIGNAL_MODE
+        value: pilot
+      - key: SERVICESIGNAL_HOST
+        value: 0.0.0.0
+      - key: SERVICESIGNAL_DB
+        value: /app/data/servicesignal.sqlite
+      - key: COOKIE_SECURE
+        value: '1'
+      - key: AGENT_PROVIDER
+        value: fixture
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BACKUP_DIRECTORY
+        value: /app/data/backups
+      - key: PDF_OCR_ENABLED
+        value: '1'

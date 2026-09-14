@@ -11,9 +11,18 @@ from dotenv import load_dotenv
 
 os.chdir(Path(__file__).resolve().parent.parent)
 load_dotenv()
-port = os.environ.setdefault("SERVICESIGNAL_PORT", "8017")
+port = os.environ.get("PORT") or os.environ.get("SERVICESIGNAL_PORT", "8017")
+os.environ["SERVICESIGNAL_PORT"] = port
 os.environ.setdefault("PUBLISHER_ORIGIN", f"http://127.0.0.1:{port}")
-os.environ.setdefault("PUBLIC_ORIGIN", f"http://localhost:{port}")
+os.environ.setdefault(
+    "PUBLIC_ORIGIN",
+    os.getenv("RENDER_EXTERNAL_URL")
+    or (
+        "https://" + os.environ["RAILWAY_PUBLIC_DOMAIN"]
+        if os.getenv("RAILWAY_PUBLIC_DOMAIN")
+        else f"http://localhost:{port}"
+    ),
+)
 children = []
 
 
@@ -26,6 +35,8 @@ signal.signal(signal.SIGINT, stop)
 exit_code = 0
 try:
     children.append(subprocess.Popen([sys.executable, "-m", "app.worker"]))
+    children.append(subprocess.Popen([sys.executable, "-m", "app.operations"]))
+    children.append(subprocess.Popen([sys.executable, "-m", "app.delivery"]))
     children.append(
         subprocess.Popen(
             [

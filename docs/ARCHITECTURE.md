@@ -44,7 +44,7 @@ This prototype runs one API and one worker on a persistent host, sharing the sam
 
 ## Differences from the planning PRD
 
-The runnable implementation chooses plain JavaScript instead of React, SQLite instead of PostgreSQL, and generated in-memory PDFs instead of S3 assets. Pilot organizations can own multiple program workspaces, each with four fixed surfaces and one active notice. Text-based PDFs are now preserved privately and extracted in a resource-limited subprocess. Arbitrary crawls and external directory writes are absent. Fixed Spanish notices are optional and off by default. The README is the source of truth for implemented scope; the PRD remains a record of the larger proposal.
+The runnable implementation chooses plain JavaScript instead of React, SQLite instead of PostgreSQL, and generated in-memory PDFs instead of S3 assets. Pilot organizations can own multiple program workspaces, each with four core surfaces and independent notices for disjoint dates. Text-based PDFs are now preserved privately and extracted in a resource-limited subprocess. Arbitrary crawls and external directory writes are absent. Fixed Spanish notices are optional and off by default. The README is the source of truth for implemented scope; the PRD remains a record of the larger proposal.
 
 
 ## Program scope and resident expiry safeguard
@@ -62,3 +62,9 @@ Pilot requests require a 12-hour account session and an active organization memb
 Each review binds its program baseline, enabled languages and partner/print inventory to the approval hash. A changed baseline invalidates a pending approval until reconfirmed, while approved notices keep their immutable context. The worker reconstructs and reads back every enabled language, recording facts, hash and observation time per language. Follow-up choices only create drafts; they cannot alter the published notice without a new approval.
 
 Content hashes version JavaScript and stylesheets so a deployment cannot silently reuse a previous interface from browser cache.
+
+## Expanded runtime
+
+Pilot publication records are stored per change. Different date sets publish and expire independently; each has an addressable public page and flyer. The program URL lists all current publication records. An overlapping replacement must include the old notice's entire date set and requires explicit acknowledgment. Demo behavior retains whole-notice replacement for replayability.
+
+TOTP secrets and recovery-message contents are encrypted; only recovery-code and session-token hashes are stored. Successful password recovery revokes sessions and preserves MFA. The delivery sender and scheduled operations run as separately supervised processes so external-provider delays and backups cannot block the publication worker heartbeat. Optional SMTP/SMS/WordPress adapters require a second owner approval and do not claim exactly-once external delivery. See the integration and hosting runbooks for their precise boundaries.

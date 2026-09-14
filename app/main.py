@@ -16,7 +16,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import accounts, agent, assets, db, service
+from . import accounts, account_security, agent, assets, db, delivery, service
 from .domain import AMBIGUOUS_EXAMPLE, EXAMPLE, FALLBACK, Facts, Program, canonical, digest
 from .notices import flyer_pdf, qr_svg, render_notice
 
@@ -32,6 +32,8 @@ async def lifespan(app):
 
 app = FastAPI(title="ServiceSignal", version="0.1.0", lifespan=lifespan)
 app.include_router(accounts.router)
+app.include_router(account_security.router)
+app.include_router(delivery.router)
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
 
@@ -102,7 +104,7 @@ class Clock(StrictBody):
 def index():
     page = (ROOT / "static/index.html").read_text()
     stamp = assets.version()
-    for name in ("app.js", "styles.css", "typography.css"):
+    for name in ("app.js", "features.js", "styles.css", "typography.css"):
         page = page.replace("/static/" + name, "/static/" + name + "?v=" + stamp)
     return HTMLResponse(page)
 
@@ -208,6 +210,11 @@ def dashboard(ws=Depends(workspace)):
             else []
         )
     return {
+        "features": {
+            "external_delivery": delivery.smtp_configured()
+            or all(os.getenv(k) for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM"))
+            or bool(os.getenv("SERVICESIGNAL_CONNECTORS_FILE"))
+        },
         "program": db.program(ws),
         "mode": "pilot" if ws.get("org_id") else "demo",
         "actor": ws.get("actor"),
@@ -495,10 +502,17 @@ def public_workspace(public_id):
     return dict(row)
 
 
-def publication(public_id):
+def publication(public_id, change_id=None):
     ws = public_workspace(public_id)
     with db.connect() as c:
         row = c.execute("SELECT payload FROM publications WHERE workspace_id=?", (ws["id"],)).fetchone()
+        if change_id and ws["org_id"]:
+            row = c.execute(
+                "SELECT p.payload FROM notice_publications p JOIN changes ch ON ch.id=p.change_id WHERE p.workspace_id=? AND p.change_id=? AND ch.state!='SUPERSEDED'",
+                (ws["id"], change_id),
+            ).fetchone()
+            if not row:
+                raise HTTPException(404, "This notice has not been published or has been superseded.")
         now = db.now(c, ws["id"])
     payload = json.loads(row[0]) if row[0] else None
     # Serve only the already-approved fallback after the end, even with a stopped worker.
@@ -510,13 +524,50 @@ def publication(public_id):
 
 
 @app.get("/notices/{public_id}", response_class=HTMLResponse)
-def notice(public_id: str, lang: Literal["en", "es"] = "en"):
+def notice(public_id: str, lang: Literal["en", "es"] = "en", change: str | None = None):
     ws = public_workspace(public_id)
-    payload = publication(public_id)
+    if ws["org_id"] and not change:
+        with db.connect() as c:
+            rows = c.execute(
+                "SELECT p.change_id FROM notice_publications p JOIN changes ch ON ch.id=p.change_id WHERE p.workspace_id=? AND ch.state!='SUPERSEDED' ORDER BY ch.approved_at DESC,ch.id",
+                (ws["id"],),
+            ).fetchall()
+        if len(rows) > 1:
+            from .notices import render_collection
+
+            items = [(r[0], publication(public_id, r[0])) for r in rows]
+            return render_collection(items, public_id, lang)
+        if rows:
+            change = rows[0][0]
+    payload = publication(public_id, change)
     context = payload.get("program_context", db.program(ws)) if payload else db.program(ws)
     if lang == "es" and not context.get("spanish_enabled"):
         raise HTTPException(404, "Spanish output has not been approved for this notice.")
-    return render_notice(payload, public_id, context, demo=not bool(ws.get("org_id")), language=lang)
+    route_id = public_id + ("/changes/" + change if change and ws["org_id"] else "")
+    return render_notice(payload, route_id, context, demo=not bool(ws.get("org_id")), language=lang)
+
+
+@app.get("/notices/{public_id}/changes/{change_id}", response_class=HTMLResponse)
+def individual_notice(public_id: str, change_id: str, lang: Literal["en", "es"] = "en"):
+    return notice(public_id, lang, change_id)
+
+
+@app.get("/notices/{public_id}/changes/{change_id}/qr.svg")
+def individual_qr(public_id: str, change_id: str):
+    publication(public_id, change_id)
+    return Response(qr_svg(public_url(public_id) + "/changes/" + change_id), media_type="image/svg+xml")
+
+
+@app.get("/notices/{public_id}/changes/{change_id}/flyer.pdf")
+def individual_flyer(public_id: str, change_id: str, lang: Literal["en", "es"] = "en"):
+    payload = publication(public_id, change_id)
+    if not payload or (lang == "es" and not payload.get("program_context", {}).get("spanish_enabled")):
+        raise HTTPException(404)
+    return Response(
+        flyer_pdf(payload, public_url(public_id) + "/changes/" + change_id, language=lang),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="community-notice.pdf"'},
+    )
 
 
 def public_url(public_id):
@@ -612,7 +663,7 @@ async def upload_document(request: Request, ws=Depends(workspace)):
             cwd=ROOT,
         )
         try:
-            output, _ = await asyncio.wait_for(process.communicate(bytes(raw)), timeout=8)
+            output, _ = await asyncio.wait_for(process.communicate(bytes(raw)), timeout=50)
             result = json.loads(output)
         except (asyncio.TimeoutError, ValueError):
             if process.returncode is None:
@@ -648,7 +699,7 @@ async def upload_document(request: Request, ws=Depends(workspace)):
             ws["id"],
             None,
             "SOURCE_PRESERVED",
-            f"Text PDF preserved with {result['pages']} page(s); source SHA-256 {sha}.",
+            f"PDF preserved with {result['pages']} page(s); OCR pages: {result.get('ocr_pages', [])}. Verify extracted dates, times and address against the original. Source SHA-256 {sha}.",
         )
     return {"id": document_id, **result}
 
@@ -827,3 +878,21 @@ def follow_up(change_id: str, body: FollowUp, ws=Depends(workspace)):
             "Prepared a new arrangement for explicit fact confirmation and a separate approval. Existing publication is unchanged.",
         )
         return service.serialize(c, service.get_change(c, ws["id"], new_id))
+
+
+@app.get("/api/operations")
+def operational_status(request: Request):
+    accounts.owner(request)
+    from .operations import snapshot
+
+    return snapshot()
+
+
+@app.get("/internal/metrics")
+def metrics(authorization: str = Header(default="")):
+    token = os.getenv("OPERATOR_METRICS_TOKEN")
+    if not token or not secrets.compare_digest(authorization, "Bearer " + token):
+        raise HTTPException(404)
+    from .operations import snapshot
+
+    return {**snapshot(), "worker": worker_status()}

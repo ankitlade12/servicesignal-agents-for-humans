@@ -85,6 +85,9 @@ def main():
     restore = sub.add_parser("restore")
     restore.add_argument("--input", required=True)
     restore.add_argument("--output", required=True)
+    decrypt = sub.add_parser("decrypt-backup")
+    decrypt.add_argument("--input", required=True)
+    decrypt.add_argument("--output", required=True)
     prune = sub.add_parser("retention")
     prune.add_argument("--days", type=int, default=90)
     prune.add_argument("--apply", action="store_true")
@@ -94,6 +97,11 @@ def main():
     elif args.command == "restore":
         result = copy_database(args.input, args.output)
         result["next_step"] = "Verify this isolated copy before pointing a stopped API/worker pair at it."
+    elif args.command == "decrypt-backup":
+        from app.operations import decrypt_backup
+
+        decrypt_backup(args.input, args.output)
+        result = {"path": args.output, "next_step": "Verify integrity and restore to an isolated service."}
     else:
         if args.days < 7:
             parser.error("Retention must be at least seven days.")

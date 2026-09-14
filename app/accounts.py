@@ -151,6 +151,7 @@ class Body(BaseModel):
 
 
 class Login(Body):
+    code: str = Field(default="", max_length=100)
     email: str = Field(max_length=254)
     password: str = Field(min_length=1, max_length=128)
 
@@ -166,6 +167,7 @@ class Accept(Login):
 
 
 class Password(Body):
+    code: str = Field(default="", max_length=100)
     current_password: str = Field(max_length=128)
     new_password: str = Field(min_length=12, max_length=128)
 
@@ -203,6 +205,12 @@ def login(body: Login, request: Request, response: Response):
         raise HTTPException(401, "Email or password is incorrect.")
     token = secrets.token_urlsafe(32)
     with db.connect(write=True) as c:
+        current = c.execute("SELECT * FROM users WHERE id=? AND active=1", (user["id"],)).fetchone()
+        if not current or current["password_hash"] != saved:
+            raise HTTPException(401, "Account access changed. Sign in again.")
+        from .account_security import verify_second_factor
+
+        verify_second_factor(c, current, body.code)
         c.execute("DELETE FROM sessions WHERE expires_at<?", (time.time(),))
         # Limit retained sessions per user, retaining the newest twelve-hour window.
         if c.execute("SELECT count(*) FROM sessions WHERE user_id=?", (user["id"],)).fetchone()[0] >= 10:
@@ -349,8 +357,15 @@ def change_password(body: Password, request: Request, response: Response):
         old = c.execute("SELECT password_hash FROM users WHERE id=?", (actor["id"],)).fetchone()[0]
     if not verify_password(body.current_password, old):
         raise HTTPException(401, "Current password is incorrect.")
+    from .account_security import limit
+
+    limit("password:" + actor["id"])
     hashed = password_hash(body.new_password)
     with db.connect(write=True) as c:
+        from .account_security import verify_second_factor
+
+        current = c.execute("SELECT * FROM users WHERE id=?", (actor["id"],)).fetchone()
+        verify_second_factor(c, current, body.code)
         if (
             c.execute(
                 "UPDATE users SET password_hash=? WHERE id=? AND password_hash=?", (hashed, actor["id"], old)

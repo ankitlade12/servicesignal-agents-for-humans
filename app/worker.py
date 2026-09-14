@@ -90,7 +90,8 @@ def process(job, client=None):
         mismatch = None
         for language in languages:
             page = client.get(
-                f"/notices/{ws['public_id']}?verification={job['id']}&lang={language}",
+                f"/notices/{ws['public_id']}?verification={job['id']}&lang={language}"
+                + (f"&change={change['id']}" if ws["org_id"] else ""),
                 headers={"Cache-Control": "no-cache"},
             )
             page.raise_for_status()
@@ -217,7 +218,7 @@ def run():
             job = claim()
             if job:
                 process(job)
-            else:
+            if not job:
                 time.sleep(1)
         except KeyboardInterrupt:
             return

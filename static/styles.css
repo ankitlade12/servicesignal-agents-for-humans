@@ -15,3 +15,8 @@ fieldset{border:0;padding:0;margin:0;min-width:0}fieldset:disabled{opacity:.7}.c
 .login-layout{min-height:100vh;display:grid;grid-template-columns:1fr 440px;gap:70px;align-items:center;max-width:1100px;margin:auto;padding:40px}.login-intro h1{font-size:48px;line-height:1.15;margin-top:60px}.login-intro p{max-width:460px;font-size:18px;line-height:1.7}.login-layout .field{margin-bottom:20px}.login-layout button{margin-top:20px}#login-error{color:#a1362d;margin:14px 0}.program-selector{margin-top:14px}.sidebar select{width:100%;font-size:12px;margin-bottom:16px}#new-program-form .field{max-width:500px}#invite-form button,#password-form button{margin-top:20px}#password-form .field{margin-bottom:18px}@media(max-width:760px){.login-layout{grid-template-columns:1fr;padding:24px;gap:20px}.login-intro h1{font-size:34px;margin-top:28px}.login-intro p{font-size:15px}.program-selector,#program-switch{display:none}}
 
 [hidden]{display:none!important}#inventory-form .input,#inventory-form textarea{margin-bottom:15px}#inventory-form h3{margin-top:24px}.public-notice nav{margin-bottom:24px;font-size:14px}.public-notice nav a{padding:6px}.spaced-panel summary{margin-bottom:14px}
+
+.wrap-code{overflow-wrap:anywhere;display:block;padding:12px;background:#f2f5ed} select{max-width:100%}
+
+@media(min-width:601px){.sidebar{overflow-y:auto}.sidebar>*{flex-shrink:0}}
+@media(max-width:600px){.sidebar nav{overflow-x:auto;justify-content:flex-start}.nav-item{flex:0 0 44px}}
