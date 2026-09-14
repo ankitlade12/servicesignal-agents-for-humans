@@ -62,3 +62,7 @@ Both commands refuse to overwrite existing destinations. Test the isolated copy 
 Use `/api/ready` for API/database plus publication-worker readiness. Configure the hosting platform's health/restart behavior and alerts for disk pressure and availability. Account & team shows queued/failed jobs and backup status. For an external monitoring system, set OPERATOR_METRICS_TOKEN and poll `/internal/metrics` with `Authorization: Bearer <token>`. It exposes operational counts, storage sizes and backup/worker status, not private source text.
 
 The application does not configure an external alert recipient or claim a completed security/accessibility audit. Complete a hosted restore drill and operational review before relying on real community data.
+
+## Current deployment
+
+The Railway production service at https://servicesignal-production.up.railway.app now has OPENAI_API_KEY configured privately and AGENT_PROVIDER=openai. The local `.env` also selects OpenAI. Live smoke and the final 12-case development evaluation passed; keep the key out of source control. The extended time, HSDS and external-copy release passed CI and Railway reports a successful deployment. See `VERIFICATION.md` for the evidence and remaining acceptance boundaries.
