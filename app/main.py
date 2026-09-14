@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import accounts, account_security, agent, assets, db, delivery, service
-from .domain import AMBIGUOUS_EXAMPLE, EXAMPLE, FALLBACK, Facts, Program, canonical, digest
+from .domain import AMBIGUOUS_EXAMPLE, EXAMPLE, FALLBACK, Facts, Program, TimeChoice, canonical, digest
 from .notices import flyer_pdf, qr_svg, render_notice
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -104,7 +104,7 @@ class Clock(StrictBody):
 def index():
     page = (ROOT / "static/index.html").read_text()
     stamp = assets.version()
-    for name in ("app.js", "features.js", "styles.css", "typography.css"):
+    for name in ("app.js", "features.js", "capabilities.js", "styles.css", "typography.css"):
         page = page.replace("/static/" + name, "/static/" + name + "?v=" + stamp)
     return HTMLResponse(page)
 
@@ -210,6 +210,8 @@ def dashboard(ws=Depends(workspace)):
             else []
         )
     return {
+        "external_checks": external_check_history(ws["id"]),
+        "directory_source": has_directory_source(ws["id"]),
         "features": {
             "external_delivery": delivery.smtp_configured()
             or all(os.getenv(k) for k in ("TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM"))
@@ -323,7 +325,7 @@ async def intake(body: Intake, ws=Depends(workspace)):
     with db.connect(write=True) as c:
         c.execute(
             "UPDATE changes SET proposal=?,state=?,metrics=? WHERE id=?",
-            (canonical(proposal.model_dump()), state, canonical(metrics), change_id),
+            (canonical(proposal.model_dump(mode="json")), state, canonical(metrics), change_id),
         )
         db.event(
             c,
@@ -803,6 +805,7 @@ def configure_inventory(body: Inventory, ws=Depends(workspace)):
 class FollowUp(StrictBody):
     arrangement: str
     dates: list[str] = Field(min_length=1, max_length=12)
+    time_choices: dict[str, TimeChoice] = Field(default_factory=dict, max_length=12)
 
 
 @app.post("/api/changes/{change_id}/follow-up")
@@ -827,6 +830,8 @@ def follow_up(change_id: str, body: FollowUp, ws=Depends(workspace)):
             "room": base["room"],
             "start_time": base["start_time"],
             "end_time": base["end_time"],
+            "end_day_offset": base.get("end_day_offset", 0),
+            "time_choices": {day: choice.model_dump() for day, choice in body.time_choices.items()},
         }
         if body.arrangement != "extend":
             candidate["kind"] = "relocation"
@@ -864,7 +869,7 @@ def follow_up(change_id: str, body: FollowUp, ws=Depends(workspace)):
                 ws["id"],
                 source,
                 source_hash,
-                canonical(proposal.model_dump()),
+                canonical(proposal.model_dump(mode="json")),
                 time.time(),
                 canonical({"live": False, "origin": "coordinator_follow_up", "previous_change": change_id}),
                 canonical(ws["actor"]) if ws.get("actor") else None,
@@ -896,3 +901,188 @@ def metrics(authorization: str = Header(default="")):
     from .operations import snapshot
 
     return {**snapshot(), "worker": worker_status()}
+
+
+@app.post("/api/session-times")
+def session_times(body: Facts, ws=Depends(workspace)):
+    return {"occurrences": body.occurrences(), "expires_at": body.expires_at()}
+
+
+@app.get("/api/directory/export")
+def directory_export(ws=Depends(workspace)):
+    from .directory import export_service
+
+    return Response(
+        canonical(export_service(ws, os.getenv("PUBLIC_ORIGIN", "http://localhost:8017"))),
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="servicesignal-hsds-3.2.json"'},
+    )
+
+
+def directory_owner(ws):
+    require_workspace_owner(ws)
+    if not ws.get("org_id"):
+        raise HTTPException(403, "Directory imports require an organization owner account.")
+
+
+@app.post("/api/directory/preview")
+async def directory_preview(request: Request, ws=Depends(workspace)):
+    from .directory import preview_import
+
+    directory_owner(ws)
+    raw = bytearray()
+    async for chunk in request.stream():
+        raw.extend(chunk)
+        if len(raw) > 2 * 1024**2:
+            raise HTTPException(413, "Directory files must be no larger than 2 MB.")
+    try:
+        document = json.loads(raw)
+    except (ValueError, RecursionError):
+        raise HTTPException(422, "Upload a valid HSDS JSON file.") from None
+
+    # Bound nesting before applying the recursive official schema.
+    def depth(value, level=0):
+        if level > 20:
+            raise HTTPException(422, "Directory JSON nesting exceeds 20 levels.")
+        if isinstance(value, dict):
+            for child in value.values():
+                depth(child, level + 1)
+        elif isinstance(value, list):
+            for child in value:
+                depth(child, level + 1)
+
+    depth(document)
+    return preview_import(ws, document)
+
+
+class DirectoryConfirm(StrictBody):
+    index: int = Field(ge=0, le=49)
+    program: Program
+    confirmed: bool
+
+
+@app.post("/api/directory/imports/{import_id}/confirm")
+def directory_confirm(import_id: str, body: DirectoryConfirm, ws=Depends(workspace)):
+    from .directory import confirm_import
+
+    directory_owner(ws)
+    return confirm_import(ws, import_id, body.index, body.program, body.confirmed)
+
+
+@app.get("/api/directory/source")
+def directory_source(ws=Depends(workspace)):
+    directory_owner(ws)
+    with db.connect() as c:
+        row = c.execute("SELECT source FROM directory_sources WHERE workspace_id=?", (ws["id"],)).fetchone()
+    if not row:
+        raise HTTPException(404, "This program has no imported directory source.")
+    return Response(
+        row[0],
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="original-directory-service.json"'},
+    )
+
+
+class ExternalInspect(StrictBody):
+    url: str = Field(min_length=8, max_length=2048)
+    revision: int
+    confirmed: bool
+
+
+INSPECTION_SLOTS = asyncio.Semaphore(2)
+
+
+@app.post("/api/changes/{change_id}/inspect")
+async def inspect_copy(change_id: str, body: ExternalInspect, ws=Depends(workspace)):
+    from .external_copies import compare_text
+
+    if not ws.get("org_id"):
+        raise HTTPException(403, "External checks require an organization account.")
+    if not body.confirmed:
+        raise HTTPException(422, "Confirm this is a public copy you intend to inspect.")
+    with db.connect() as c:
+        change = service.get_change(c, ws["id"], change_id)
+    if not change["facts"] or change["revision"] != body.revision or change["state"] == "SUPERSEDED":
+        raise HTTPException(409, "Confirm the current revision’s facts before comparing an external copy.")
+    account_security.limit("copy-workspace:" + ws["id"], 20, 86400)
+    account_security.limit("copy-global", 200, 86400)
+    if INSPECTION_SLOTS.locked():
+        raise HTTPException(429, "Copy readers are busy; try again shortly.")
+    async with INSPECTION_SLOTS:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-m",
+            "app.external_copies",
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+            cwd=ROOT,
+            start_new_session=True,
+            env={
+                k: v
+                for k, v in os.environ.items()
+                if k in ("PATH", "LANG", "LC_ALL", "SYSTEMROOT", "TMPDIR", "PDF_OCR_ENABLED")
+            },
+        )
+        try:
+            output, _ = await asyncio.wait_for(
+                process.communicate(canonical({"url": body.url}).encode()), timeout=50
+            )
+            result = json.loads(output)
+        except (asyncio.TimeoutError, ValueError):
+            raise HTTPException(
+                422, "The copy could not be read within the time and document limits."
+            ) from None
+        finally:
+            if process.returncode is None:
+                import signal
+
+                os.killpg(process.pid, signal.SIGKILL)
+                await process.wait()
+    if process.returncode or "error" in result:
+        raise HTTPException(422, result.get("error", "The external copy could not be read."))
+    observation = {
+        **{k: v for k, v in result.items() if k != "text"},
+        **compare_text(result["text"], json.loads(change["facts"])),
+        "observed_at": time.time(),
+        "revision": body.revision,
+    }
+    check_id = secrets.token_urlsafe(16)
+    with db.connect(write=True) as c:
+        latest = service.get_change(c, ws["id"], change_id)
+        if latest["revision"] != body.revision or latest["state"] == "SUPERSEDED":
+            raise HTTPException(409, "The notice changed during inspection. Compare the new revision.")
+        c.execute(
+            "INSERT INTO external_checks VALUES(?,?,?,?,?,?,?)",
+            (check_id, ws["id"], change_id, body.revision, body.url, canonical(observation), time.time()),
+        )
+        c.execute(
+            "DELETE FROM external_checks WHERE workspace_id=? AND id NOT IN (SELECT id FROM external_checks WHERE workspace_id=? ORDER BY created_at DESC,rowid DESC LIMIT 100)",
+            (ws["id"], ws["id"]),
+        )
+        db.event(
+            c,
+            ws["id"],
+            change_id,
+            "EXTERNAL_COPY_INSPECTED",
+            "Read-only copy comparison recorded. No external publication or correction is claimed.",
+        )
+    return {"id": check_id, **observation}
+
+
+def external_check_history(workspace_id):
+    with db.connect() as c:
+        return [
+            {**dict(r), "result": json.loads(r["result"])}
+            for r in c.execute(
+                "SELECT * FROM external_checks WHERE workspace_id=? ORDER BY created_at DESC,rowid DESC LIMIT 20",
+                (workspace_id,),
+            )
+        ]
+
+
+def has_directory_source(workspace_id):
+    with db.connect() as c:
+        return bool(
+            c.execute("SELECT 1 FROM directory_sources WHERE workspace_id=?", (workspace_id,)).fetchone()
+        )

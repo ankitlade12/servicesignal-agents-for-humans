@@ -2,7 +2,7 @@
 
 import hashlib
 import json
-from datetime import date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -17,6 +17,7 @@ PROGRAM = {
     "room": "Room A",
     "start_time": "18:00",
     "end_time": "20:00",
+    "end_day_offset": 0,
     "weekdays": [1],
     "contact": "",
     "contact_es": "",
@@ -49,6 +50,7 @@ class Program(BaseModel):
     room: str = Field(min_length=1, max_length=80)
     start_time: str
     end_time: str
+    end_day_offset: Literal[0, 1] = 0
     contact: str = Field(default="", max_length=200)
     contact_es: str = Field(default="", max_length=200)
     spanish_enabled: bool = False
@@ -58,7 +60,7 @@ class Program(BaseModel):
         if self.spanish_enabled and self.contact and not self.contact_es:
             raise ValueError("Add confirmed Spanish contact instructions before enabling Spanish notices.")
         validate_zone(self.timezone)
-        validate_hours(self.start_time, self.end_time)
+        validate_hours(self.start_time, self.end_time, self.end_day_offset)
         if any(d not in range(7) for d in self.weekdays):
             raise ValueError("Select valid weekdays, Monday through Sunday.")
         self.weekdays = sorted(set(self.weekdays))
@@ -75,12 +77,40 @@ def validate_zone(value):
         raise ValueError("Use a valid IANA timezone, such as America/Chicago.") from None
 
 
-def validate_hours(start, end):
+def validate_hours(start, end, end_day_offset=0, allow_repeated=False):
     for value in (start, end):
         if len(value) != 5 or time.fromisoformat(value).isoformat(timespec="minutes") != value:
             raise ValueError("Use HH:MM times.")
-    if end <= start:
-        raise ValueError("The session must end after it starts on the same day.")
+    if not allow_repeated and end_day_offset == 0 and end <= start:
+        raise ValueError("The session must end after it starts. Select next day for an overnight session.")
+    if end_day_offset == 1 and end > start:
+        raise ValueError("An overnight session may span at most 24 local hours.")
+
+
+class TimeChoice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    start_fold: Literal[0, 1] | None = None
+    end_fold: Literal[0, 1] | None = None
+
+
+def resolve_local(day, clock, zone_name, fold=None):
+    local = datetime.combine(day, time.fromisoformat(clock))
+    zone = ZoneInfo(zone_name)
+    candidates = [local.replace(tzinfo=zone, fold=i) for i in (0, 1)]
+    valid = [x for x in candidates if x.astimezone(UTC).astimezone(zone).replace(tzinfo=None) == local]
+    if not valid:
+        raise ValueError(
+            f"{day} {clock} does not exist in {zone_name} (daylight-saving gap). Choose another time."
+        )
+    ambiguous = len({x.timestamp() for x in valid}) == 2
+    if ambiguous and fold is None:
+        choices = " or ".join(x.strftime("%z") for x in valid)
+        raise ValueError(
+            f"{day} {clock} is a repeated hour in {zone_name}. Choose first or second occurrence ({choices})."
+        )
+    if not ambiguous and fold is not None:
+        raise ValueError(f"{day} {clock} is not a repeated hour. Clear its daylight-saving choice.")
+    return candidates[fold or 0]
 
 
 class Proposal(BaseModel):
@@ -92,6 +122,8 @@ class Proposal(BaseModel):
     room: str = Field(default="", max_length=80)
     start_time: str = "18:00"
     end_time: str = "20:00"
+    end_day_offset: Literal[0, 1] = 0
+    time_choices: dict[date, TimeChoice] = Field(default_factory=dict, max_length=12)
     timezone: str = "America/Chicago"
     evidence: dict[str, str] = Field(default_factory=dict)
     questions: list[str] = Field(default_factory=list, max_length=8)
@@ -107,6 +139,8 @@ class Facts(BaseModel):
     room: str = Field(min_length=1, max_length=80)
     start_time: str
     end_time: str
+    end_day_offset: Literal[0, 1] = 0
+    time_choices: dict[date, TimeChoice] = Field(default_factory=dict, max_length=12)
     timezone: str = "America/Chicago"
 
     @model_validator(mode="after")
@@ -117,25 +151,42 @@ class Facts(BaseModel):
         if (self.dates[-1] - self.dates[0]).days > 90:
             raise ValueError("Temporary changes may span at most 90 days.")
         validate_zone(self.timezone)
-        validate_hours(self.start_time, self.end_time)
+        validate_hours(self.start_time, self.end_time, self.end_day_offset, allow_repeated=True)
+        if set(self.time_choices) - set(self.dates):
+            raise ValueError("Daylight-saving choices must refer to affected session start dates.")
         for d in self.dates:
-            for clock in (self.start_time, self.end_time):
-                local = datetime.combine(d, time.fromisoformat(clock))
-                zone = ZoneInfo(self.timezone)
-                first = local.replace(tzinfo=zone, fold=0)
-                second = local.replace(tzinfo=zone, fold=1)
-                if first.utcoffset() != second.utcoffset():
-                    raise ValueError(
-                        "A session time falls in a daylight-saving gap or repeated hour. Choose an unambiguous time."
-                    )
+            start, end = self.session_bounds(d)
+            if end.timestamp() <= start.timestamp():
+                raise ValueError(
+                    "The session must end after it starts. Check the end day and repeated-hour choices."
+                )
         for value in (self.location, self.room):
             if any(ord(c) < 32 for c in value):
                 raise ValueError("Location fields cannot contain control characters.")
         return self
 
+    def session_bounds(self, day):
+        choice = self.time_choices.get(day, TimeChoice())
+        return (
+            resolve_local(day, self.start_time, self.timezone, choice.start_fold),
+            resolve_local(
+                day + timedelta(days=self.end_day_offset), self.end_time, self.timezone, choice.end_fold
+            ),
+        )
+
+    def occurrences(self):
+        return [
+            {
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "start_utc": start.astimezone(UTC).isoformat(),
+                "end_utc": end.astimezone(UTC).isoformat(),
+            }
+            for start, end in (self.session_bounds(day) for day in self.dates)
+        ]
+
     def expires_at(self):
-        local = datetime.combine(self.dates[-1], time.fromisoformat(self.end_time), ZoneInfo(self.timezone))
-        return local.timestamp()
+        return max(self.session_bounds(day)[1].timestamp() for day in self.dates)
 
 
 def fact_payload(facts, public_id, revision, approved_at, expired=False, program=None):
@@ -175,6 +226,9 @@ def visible_facts(payload, language="en"):
         "start_time": f["start_time"],
         "end_time": f["end_time"],
         "timezone": f["timezone"],
+        "session_times": "; ".join(
+            x["start"] + " → " + x["end"] for x in Facts.model_validate(f).occurrences()
+        ),
         "message": (copy["fallback"] if payload["expired"] else copy["message"])
         if language == "es"
         else payload["message"],

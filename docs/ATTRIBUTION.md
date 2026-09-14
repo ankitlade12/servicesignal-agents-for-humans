@@ -12,3 +12,7 @@ Reviewed September 13, 2026. Vendor pages describe capabilities; they are not in
 Original project code, UI layout, vector illustration/icons, fictional organization, addresses, and fixtures were created for this build. No real community directory data or beneficiary information was copied into the demo. AI coding assistance was used. Python dependencies are declared and pinned; their licenses remain applicable. GitHub Actions are third-party build tools.
 
 The preceding PRD was prepared September 8, 2026, within the published hackathon submission period. Implementation work took place September 13, 2026. Broader market demand, adoption, and reduced wasted trips remain hypotheses.
+
+## HSDS schema
+
+Human Services Data Specification: an Open Referral resource (https://openreferral.org/). The adapted HSDS 3.2 service schema in `schemas/` is CC BY-SA 4.0, copyright Open Referral / Aspiration, with the full upstream notice retained. Non-validation annotations were removed and whitespace compacted. See `schemas/README.md`. This third-party schema is separately licensed from the MIT application code.

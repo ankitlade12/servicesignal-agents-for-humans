@@ -1,0 +1,60 @@
+{
+  "scenario": "two-session relocation",
+  "proposal": {
+    "program": "Digital Basics",
+    "kind": "relocation",
+    "dates": [
+      "2026-09-15",
+      "2026-09-22"
+    ],
+    "location": "200 Sample Street",
+    "room": "Room B",
+    "start_time": "18:00",
+    "end_time": "20:00",
+    "end_day_offset": 0,
+    "time_choices": {},
+    "timezone": "America/Chicago",
+    "evidence": {
+      "dates": "For September 15 and September 22, 2026",
+      "location": "in Room B at 200 Sample Street",
+      "room": "in Room B at 200 Sample Street"
+    },
+    "questions": [],
+    "explanation": "The source indicates a relocation for two specific session dates only. It also says \u201cSame time,\u201d so the baseline time is reused unchanged. The phrase \u201cOther activities stay where they are\u201d indicates the change does not apply to the whole program, only those listed dates."
+  },
+  "metrics": {
+    "evidence_locations": {
+      "dates": {
+        "quote": "For September 15 and September 22, 2026",
+        "page": null,
+        "line": 1
+      },
+      "location": {
+        "quote": "in Room B at 200 Sample Street",
+        "page": null,
+        "line": 1
+      },
+      "room": {
+        "quote": "in Room B at 200 Sample Street",
+        "page": null,
+        "line": 1
+      }
+    },
+    "provider": "openai",
+    "model_id": "gpt-5.4-mini-2026-03-17",
+    "live": true,
+    "duration_ms": 3398,
+    "usage": {
+      "inputTokens": 1878,
+      "outputTokens": 218,
+      "totalTokens": 2096
+    },
+    "prompt_version": "2026-09-14.1",
+    "tool_scope": [
+      "read_source",
+      "get_program_context"
+    ],
+    "proposal_hash": "0a56f25c658afb17443e12a681a56e0d1f097c1c2bbdfe048291f3884ff30519"
+  },
+  "passed": true
+}

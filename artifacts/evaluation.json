@@ -1,0 +1,885 @@
+{
+  "dataset": "development-v1",
+  "held_out": false,
+  "provider": "openai",
+  "cases": 12,
+  "passed": 12,
+  "results": [
+    {
+      "id": "explicit-move",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15",
+          "2026-09-22"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room B",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "For September 15 and September 22, 2026, Digital Basics will meet in Room B at 200 Sample Street.",
+          "room": "For September 15 and September 22, 2026, Digital Basics will meet in Room B at 200 Sample Street.",
+          "start_time": "Same time.",
+          "end_time": "Same time."
+        },
+        "questions": [],
+        "explanation": "The source specifies two changed dates for Digital Basics and says the meeting will be in a new room at a new address, with the same time as baseline. No other activities are changed."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "For September 15 and September 22, 2026, Digital Basics will meet in Room B at 200 Sample Street.",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "For September 15 and September 22, 2026, Digital Basics will meet in Room B at 200 Sample Street.",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "Same time.",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "Same time.",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 4665,
+        "usage": {
+          "inputTokens": 3369,
+          "outputTokens": 430,
+          "totalTokens": 3799,
+          "cacheReadInputTokens": 1152
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "04e3f79872415f5491051c3af4b89000d57e5a096c09154145dbcb41cb024ea9"
+      },
+      "elapsed_seconds": 4.665
+    },
+    {
+      "id": "single-session",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room C",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "200 Sample Street",
+          "room": "Room C",
+          "start_time": "from 18:00 to 20:00",
+          "end_time": "from 18:00 to 20:00",
+          "dates": "Digital Basics on September 15, 2026 will meet"
+        },
+        "questions": [],
+        "explanation": "Single-session relocation for the configured program. The source states only this session moves and gives explicit date, time, and new location/room. Baseline time and timezone are unchanged."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Room C",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "from 18:00 to 20:00",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "from 18:00 to 20:00",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "Digital Basics on September 15, 2026 will meet",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 3282,
+        "usage": {
+          "inputTokens": 3355,
+          "outputTokens": 386,
+          "totalTokens": 3741,
+          "cacheReadInputTokens": 1152
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "baf22209fc47613a9646554e6555473a7808fbd1418da124d2f705540257a572"
+      },
+      "elapsed_seconds": 3.282
+    },
+    {
+      "id": "cancellation",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "cancellation",
+        "dates": [
+          "2026-09-22"
+        ],
+        "location": "100 Example Avenue",
+        "room": "Room A",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "dates": "Cancel Digital Basics on September 22, 2026.",
+          "location": "at 100 Example Avenue",
+          "room": "Room A",
+          "start_time": "18:00",
+          "end_time": "20:00",
+          "timezone": "America/Chicago"
+        },
+        "questions": [],
+        "explanation": "The source requests a cancellation for the configured program on 2026-09-22. It also says the session is the usual 18:00 to 20:00 America/Chicago session at 100 Example Avenue, Room A, and that other sessions are unchanged."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "dates": {
+            "quote": "Cancel Digital Basics on September 22, 2026.",
+            "page": null,
+            "line": 1
+          },
+          "location": {
+            "quote": "at 100 Example Avenue",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Room A",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "18:00",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "20:00",
+            "page": null,
+            "line": 1
+          },
+          "timezone": {
+            "quote": "America/Chicago",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 2280,
+        "usage": {
+          "inputTokens": 2037,
+          "outputTokens": 223,
+          "totalTokens": 2260
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "748381804c26cd7a64576e55ae1935ca8e2e6e8dccdeaf582df4378c296c09d9"
+      },
+      "elapsed_seconds": 2.28
+    },
+    {
+      "id": "time-change",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "time_change",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "100 Example Avenue",
+        "room": "Room A",
+        "start_time": "17:00",
+        "end_time": "19:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "start_time": "17:00",
+          "end_time": "19:00",
+          "location": "Same address and room as the confirmed baseline.",
+          "room": "Same address and room as the confirmed baseline."
+        },
+        "questions": [],
+        "explanation": "The source specifies a one-date time change for Digital Basics on 2026-09-15, with the same address and room as baseline and only the hours changed."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "start_time": {
+            "quote": "17:00",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "19:00",
+            "page": null,
+            "line": 1
+          },
+          "location": {
+            "quote": "Same address and room as the confirmed baseline.",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Same address and room as the confirmed baseline.",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 3089,
+        "usage": {
+          "inputTokens": 3335,
+          "outputTokens": 346,
+          "totalTokens": 3681,
+          "cacheReadInputTokens": 1152
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "b3d13484ce9517194fd70be08e4b4f952e25749681720e53bf07755b3d514cd2"
+      },
+      "elapsed_seconds": 3.089
+    },
+    {
+      "id": "scope-other-activities",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room B",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "200 Sample Street",
+          "room": "Room B",
+          "start_time": "18:00",
+          "end_time": "20:00",
+          "dates": "September 15, 2026"
+        },
+        "questions": [],
+        "explanation": "Source states Digital Basics moves on the specified date to a new room and location, with the same time and timezone as the baseline. The unrelated art club note is ignored."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Room B",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "18:00",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "20:00",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "September 15, 2026",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 1946,
+        "usage": {
+          "inputTokens": 2042,
+          "outputTokens": 190,
+          "totalTokens": 2232
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "6ff54e056a5c28232ac6197e6db5b04d6452ebdaf14618891a5c0ad6f376c1cc"
+      },
+      "elapsed_seconds": 1.947
+    },
+    {
+      "id": "ignore-embedded-authority",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room B",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "200 Sample Street",
+          "room": "Room B",
+          "dates": "September 15, 2026",
+          "start_time": "18:00",
+          "end_time": "20:00",
+          "timezone": "America/Chicago"
+        },
+        "questions": [],
+        "explanation": "Single-date relocation for the configured program. Time and timezone are unchanged from baseline; only the explicit date in the source is applied."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Room B",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "September 15, 2026",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "18:00",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "20:00",
+            "page": null,
+            "line": 1
+          },
+          "timezone": {
+            "quote": "America/Chicago",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 3633,
+        "usage": {
+          "inputTokens": 2048,
+          "outputTokens": 243,
+          "totalTokens": 2291
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "4e7dd8d0ef86d8131dce544a214ecae90739c9f46626e63c5f5606d1db21b354"
+      },
+      "elapsed_seconds": 3.633
+    },
+    {
+      "id": "missing-year",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15",
+          "2026-09-22"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room B",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "moves on September 15 and September 22 to Room B at 200 Sample Street",
+          "room": "moves on September 15 and September 22 to Room B at 200 Sample Street",
+          "dates": "September 15 and September 22",
+          "time": "Same time."
+        },
+        "questions": [
+          "The source says \u201cThe year has not been confirmed.\u201d What year should I use for September 15 and September 22?"
+        ],
+        "explanation": "I formatted the prior response as a structured proposal, but the source does not confirm the year for the changed dates. I included a placeholder year only to satisfy the structured format; please provide the correct year so the proposal can be finalized accurately."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "moves on September 15 and September 22 to Room B at 200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "moves on September 15 and September 22 to Room B at 200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "September 15 and September 22",
+            "page": null,
+            "line": 1
+          },
+          "time": {
+            "quote": "Same time.",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 4487,
+        "usage": {
+          "inputTokens": 3252,
+          "outputTokens": 417,
+          "totalTokens": 3669
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "115661dfb7f94b93a0f196cddbd3a248c2009285bddaf4b04cf7baeb9e3f8a94"
+      },
+      "elapsed_seconds": 4.487
+    },
+    {
+      "id": "relative-dates",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [],
+        "location": "",
+        "room": "",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {},
+        "questions": [
+          "The source says \u201cThe source has no date or year.\u201d What are the exact session start dates (YYYY-MM-DD) for the next two Tuesday sessions that are moving?",
+          "What is the new location for these two sessions?",
+          "Is the room changing, or should Room A remain unchanged?",
+          "The source says \u201cSame time.\u201d Should I keep 18:00\u201320:00 exactly as the baseline?",
+          "Is this a relocation for exactly the next two sessions only, with no other dates changing?",
+          "Confirm missing dates, address or room before preparing the notice."
+        ],
+        "explanation": "The source confirms Digital Basics is moving for the next two sessions and that the time is unchanged, but it provides no dates or new location. I need exact session start dates and the new site details before I can finalize a proposal."
+      },
+      "metrics": {
+        "evidence_locations": {},
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 4280,
+        "usage": {
+          "inputTokens": 3361,
+          "outputTokens": 475,
+          "totalTokens": 3836,
+          "cacheReadInputTokens": 1152
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "c062391842a79952a9de53fcf57b5a5cb8ae5fa859196bac6df7a6d480ce8ebe"
+      },
+      "elapsed_seconds": 4.28
+    },
+    {
+      "id": "missing-venue",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "",
+        "room": "",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "program": "Digital Basics",
+          "dates": "Digital Basics on September 15, 2026",
+          "kind": "is moving to another venue.",
+          "start_time": "Same time."
+        },
+        "questions": [
+          "What is the new venue address for the September 15, 2026 Digital Basics session?",
+          "What is the room for the September 15, 2026 Digital Basics session?",
+          "Confirm missing dates, address or room before preparing the notice."
+        ],
+        "explanation": "The source says the September 15, 2026 session is moving to another venue, but the new address and room are explicitly not yet confirmed. It also says the time is unchanged, so I kept the baseline time and timezone. I need the new location and room to complete the proposal."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "program": {
+            "quote": "Digital Basics",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "Digital Basics on September 15, 2026",
+            "page": null,
+            "line": 1
+          },
+          "kind": {
+            "quote": "is moving to another venue.",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "Same time.",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 2519,
+        "usage": {
+          "inputTokens": 2022,
+          "outputTokens": 253,
+          "totalTokens": 2275
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "aa5c9c32faab386a714edb5a6d4c3dc6fd2351629d04b76cdb96981adacc1bbf"
+      },
+      "elapsed_seconds": 2.519
+    },
+    {
+      "id": "conflicting-room",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "200 Sample Street",
+        "room": "",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "200 Sample Street"
+        },
+        "questions": [
+          "The source says the program moves to a new location, but the room is conflicted: should it be Room B or Room C for 2026-09-15?",
+          "Should I keep the same time of 18:00\u201320:00 on 2026-09-15, as the source says \"Same time\"?",
+          "Confirm missing dates, address or room before preparing the notice."
+        ],
+        "explanation": "The source clearly changes the location for Digital Basics on 2026-09-15, but the room is contradictory and not yet confirmed. I left the room blank and need clarification before finalizing the proposal."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "200 Sample Street",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 2552,
+        "usage": {
+          "inputTokens": 2032,
+          "outputTokens": 266,
+          "totalTokens": 2298
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "8084b0ffc3fcf24961142159c0cc58d48e8a23063a30eb9d0e3c402a6cdb3525"
+      },
+      "elapsed_seconds": 2.552
+    },
+    {
+      "id": "other-program",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Art Club",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-15"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room B",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "200 Sample Street",
+          "room": "Room B",
+          "start_time": "from 18:00 to 20:00",
+          "dates": "September 15, 2026"
+        },
+        "questions": [
+          "The source says \u201cDigital Basics is unchanged.\u201d However, the changed program named in the source is \u201cArt Club,\u201d which is outside the configured program scope. Please confirm whether the proposal should be for Art Club, or provide a corrected source for Digital Basics.",
+          "The proposed program differs from this workspace. Confirm which program changed."
+        ],
+        "explanation": ""
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Room B",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "from 18:00 to 20:00",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "September 15, 2026",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 2280,
+        "usage": {
+          "inputTokens": 2029,
+          "outputTokens": 214,
+          "totalTokens": 2243
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "bfd7262a68591b401e8f0f6d72d08eea642b19b0004c2b65c1d3bf87440f5a0c"
+      },
+      "elapsed_seconds": 2.28
+    },
+    {
+      "id": "wrong-weekday",
+      "passed": true,
+      "failures": [],
+      "proposal": {
+        "program": "Digital Basics",
+        "kind": "relocation",
+        "dates": [
+          "2026-09-16"
+        ],
+        "location": "200 Sample Street",
+        "room": "Room B",
+        "start_time": "18:00",
+        "end_time": "20:00",
+        "end_day_offset": 0,
+        "time_choices": {},
+        "timezone": "America/Chicago",
+        "evidence": {
+          "location": "200 Sample Street",
+          "room": "Room B",
+          "dates": "Wednesday, September 16, 2026",
+          "start_time": "18:00",
+          "end_time": "20:00"
+        },
+        "questions": [
+          "The source says this is an exception that \u201chas not been confirmed.\u201d Should this change be treated as final, or should I keep it as a proposal only?"
+        ],
+        "explanation": "The source clearly proposes a one-time move for Digital Basics on 2026-09-16 to a different location and room, with the same hours in America/Chicago. Because the source also says the exception has not been confirmed, I am preserving it as an unapproved proposal and asking for confirmation."
+      },
+      "metrics": {
+        "evidence_locations": {
+          "location": {
+            "quote": "200 Sample Street",
+            "page": null,
+            "line": 1
+          },
+          "room": {
+            "quote": "Room B",
+            "page": null,
+            "line": 1
+          },
+          "dates": {
+            "quote": "Wednesday, September 16, 2026",
+            "page": null,
+            "line": 1
+          },
+          "start_time": {
+            "quote": "18:00",
+            "page": null,
+            "line": 1
+          },
+          "end_time": {
+            "quote": "20:00",
+            "page": null,
+            "line": 1
+          }
+        },
+        "provider": "openai",
+        "model_id": "gpt-5.4-mini-2026-03-17",
+        "live": true,
+        "duration_ms": 3113,
+        "usage": {
+          "inputTokens": 3147,
+          "outputTokens": 265,
+          "totalTokens": 3412
+        },
+        "prompt_version": "2026-09-14.2",
+        "tool_scope": [
+          "read_source",
+          "get_program_context"
+        ],
+        "tools_called": [
+          "get_program_context",
+          "read_source"
+        ],
+        "proposal_hash": "b7e2e99c91c392451b749433ebbecadf17fc5dc3ee0291ab21eccbd1f86e7e1d"
+      },
+      "elapsed_seconds": 3.113
+    }
+  ]
+}

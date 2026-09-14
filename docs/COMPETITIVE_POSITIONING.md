@@ -44,9 +44,9 @@ A defensible positioning sentence is: **“ServiceSignal helps community coordin
 
 The controlled page is a narrow integration. A coordinator whose primary workload is an existing directory could gain little from introducing another public page. Source preservation and review also introduce work; a complicated approval flow could take longer than directly editing a simple listing. The pilot must count these costs rather than counting only automated publication time.
 
-The current application operates on one persistent host and supports one active notice per program. A new approval replaces the entire prior notice after explicit acknowledgment. It does not merge independent changes to overlapping or disjoint occurrences. Organizations with busy calendars may need that capability before the workflow becomes useful.
+The application operates on one persistent host and supports multiple independent pilot notices on disjoint dates. Overlapping replacements require explicit acknowledgment and must retain all previously covered dates. Automatic partial-overlap merging remains absent. The fictional demo retains its single-active-notice scenario.
 
-Pilot account controls are implemented, but there is no independent security audit, managed identity, MFA or self-service recovery. Hosting operations, restore exercises and ownership verification still require an operator. A real AI provider is also pending: contract tests against a local fixture establish integration behavior, not model accuracy or live reliability. These limits make a supervised pilot the appropriate next milestone.
+Pilot accounts include TOTP, recovery codes and optional email password recovery. There is no independent security audit or managed identity. Railway hosting is live; hosted restore exercises and ownership verification still require an operator. Email recovery is disabled in the current deployment. OpenAI is connected through Strands: a live smoke and the final 12-case development evaluation passed. The earlier 9/12 and 10/12 runs are retained. This small development set does not establish general model accuracy or live reliability. These limits make a supervised pilot the appropriate next milestone.
 
 ## English-first product scope
 

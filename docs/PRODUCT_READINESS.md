@@ -1,6 +1,6 @@
 # Product readiness and requirement audit
 
-ServiceSignal implements a complete controlled publication workflow and an invite-only organization pilot mode. No consenting organization, resident usage, or successful live model evaluation has been established. This audit records implementation boundaries, not production certification.
+ServiceSignal implements a complete controlled publication workflow and an invite-only organization pilot mode. No consenting organization or resident usage has been established. Live OpenAI smoke and a 12-case development evaluation have passed; this is not a held-out quality study. This audit records implementation boundaries, not production certification.
 
 English is the default. Spanish is optional and off; the earlier PRD's bilingual requirement is superseded by the current English-first scope. Enable additional language coverage only after validating audience need and reviewing the templates.
 
@@ -11,13 +11,13 @@ English is the default. Spanish is optional and off; the earlier PRD's bilingual
 | FR-01 Program and surfaces | Confirmed baseline, multiple pilot programs, partner/print owners and reference URL, immutable reviewed context | Four fixed surface types; arbitrary destinations and connectors absent |
 | FR-02 Evidence | Paste/text PDF, original bytes, content hashes, page/line references, deduplication, private downloads, operator retention | OCR implemented; scheduled encrypted backups and optional source retention implemented; organization policy and off-host storage configuration remain |
 | FR-03 Program/session scope | Program/timezone/weekdays validation, exact occurrences, named authorized reviewers | Requires a real owner to confirm actual program information |
-| FR-04 Time normalization | Explicit dates, IANA zones, UTC expiry; ambiguous/nonexistent local times rejected | Overnight sessions and explicit repeated-hour offset selection absent |
-| FR-05 Clarification | Consolidated questions, saved manual facts, model-error recovery | Live extraction quality and ambiguity benchmark unverified |
-| FR-06 Compare copies | Baseline/proposal comparison and observed rendered facts, field mismatch details | No crawling or comparison against arbitrary external PDFs |
+| FR-04 Time normalization | Explicit dates, IANA zones, UTC expiry; ambiguous/nonexistent local times rejected | Overnight end-day choice, per-session start/end fold selection, UTC preview and exact public intervals implemented; nonexistent times rejected |
+| FR-05 Clarification | Consolidated questions, saved manual facts, model-error recovery | 12-case live development evaluation passed; held-out extraction and ambiguity benchmark remains |
+| FR-06 Compare copies | Baseline/proposal comparison and observed rendered facts, field mismatch details | On-demand public HTTPS HTML/text/PDF inspection implemented with revision-bound text comparisons; arbitrary visual or semantic correctness is not inferred |
 | FR-07 Exact approval | Named confirmation/owner approval, revision, plan hash, baseline and inventory snapshot | Multiple date-disjoint pilot notices; partial-overlap replacement rejects missing previously covered dates |
 | FR-08 Authority | Organization roles, server-side owner validation, publisher secret, active lease, approved revision, destination version | Optional dedicated WordPress adapter with public read-back; live credentials and independent audit pending |
 | FR-09 Future notices | Immediate notice listing only approved future sessions | Multiple independent date-disjoint notices in pilot mode |
-| FR-10 Read-back | Separate HTTP read of visible facts; timestamp/hash per enabled language | Only the controlled page is independently verified |
+| FR-10 Read-back | Separate HTTP read of visible facts; timestamp/hash per enabled language | Controlled page independently verified; external text observations remain separate from publication verification |
 | FR-11 Partial success | Page success independent of unresolved partner/print tasks | Partner states in demo remain simulations |
 | FR-12 Replacement notices | English HTML/PDF, permanent QR, private revision-bound preview; optional fixed Spanish template | No professional language acceptance or PDF accessibility certification |
 | FR-13 External copies | Assigned print owner and placement notes, replacement PDF, attributed manual confirmation | Already printed text and screenshots remain outside automated control |
@@ -31,11 +31,11 @@ English is the default. Spanish is optional and off; the earlier PRD's bilingual
 
 | Area | Current status |
 |---|---|
-| Automated verification | 101 passing tests; lint and JS syntax checks; real browser and separate-process HTTP flow |
-| Live AI | Strands adapters for OpenAI, Anthropic and Bedrock. Real SDK contract passes against a local fixture. No successful live invocation or quality score |
+| Automated verification | 122 passing tests; lint and JS syntax checks; real browser and separate-process HTTP flow |
+| Live AI | Strands adapters for OpenAI, Anthropic and Bedrock. Real SDK contract passes against a local fixture. Live smoke passed; final development evaluation 12/12 (earlier runs 9/12 and 10/12) |
 | Evaluation | Twelve labeled synthetic development cases and runnable evaluator; no held-out 40-case study or manual/LLM baseline comparison |
 | Accessibility | Semantic labels, keyboard focus and responsive views; automated axe checks found no violations on four tested mobile views, with manual-review items remaining; full WCAG/PDF audit absent |
-| Data exchange | No HSDS export or import adapter |
+| Data exchange | HSDS 3.2 service JSON export and reviewed import into unconfirmed programs; original unmapped fields preserved; CSV/API-specific integrations outside profile |
 | Deployment | Railway HTTPS pilot with persistent volume; API and worker readiness passed; owner setup and authenticated hosted acceptance remain |
 | Account lifecycle | Operator owner provisioning/recovery; owner invites editor/viewer and revokes access; single-use initial-owner setup; no public signup or separate mailbox-verification workflow |
 | Data lifecycle | Explicit source retention and WAL-safe backup/isolated restore; scheduled encrypted snapshots, optional S3 upload and explicit retention configuration; live off-host storage still unconfigured |
@@ -55,4 +55,4 @@ The product's shareable notice and QR link can support referrals through existin
 
 ## Hackathon readiness
 
-Public MIT source, README, architecture, and a narrated fixture walkthrough are prepared. Live Strands evidence, entrant AWS Builder ID, public YouTube/Vimeo upload and Devpost submission remain open. Hosting is optional under the official rules. The existing recording predates pilot accounts and must not be described as a successful live-agent demonstration. See [submission checklist](SUBMISSION.md).
+Public MIT source, README, architecture, and a narrated fixture walkthrough are prepared. Live Strands smoke and development evaluation are recorded. Entrant AWS Builder ID, public YouTube/Vimeo upload and Devpost submission remain open. Hosting is optional under the official rules. The existing recording predates pilot accounts and must not be described as a successful live-agent demonstration. See [submission checklist](SUBMISSION.md).

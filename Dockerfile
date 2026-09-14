@@ -5,6 +5,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY app ./app
+COPY schemas ./schemas
 COPY static ./static
 COPY scripts ./scripts
 RUN useradd --create-home signal && mkdir -p data && chown -R signal:signal /app

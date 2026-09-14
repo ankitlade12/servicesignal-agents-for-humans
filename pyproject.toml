@@ -17,6 +17,7 @@ dependencies = [
   "cryptography>=50,<51",
   "pypdfium2>=4.30,<6",
   "pillow>=11,<13",
+  "jsonschema>=4.23,<5",
 ]
 
 [dependency-groups]

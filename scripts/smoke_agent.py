@@ -4,11 +4,15 @@ import asyncio
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+
 from app.agent import interpret, provider
 from app.domain import EXAMPLE
 
 
 async def main():
+    load_dotenv()
     if provider() == "fixture":
         raise SystemExit("Set AGENT_PROVIDER=openai, anthropic, or bedrock for a live smoke test.")
     proposal, metrics = await interpret(EXAMPLE)
@@ -19,7 +23,7 @@ async def main():
     assert not proposal.questions, proposal.questions
     result = {
         "scenario": "two-session relocation",
-        "proposal": proposal.model_dump(),
+        "proposal": proposal.model_dump(mode="json"),
         "metrics": metrics,
         "passed": True,
     }

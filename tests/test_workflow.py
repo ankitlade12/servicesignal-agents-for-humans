@@ -269,7 +269,9 @@ def test_simulator_publication_is_labeled(client):
     ch = approve(client)
     client.post(f"/api/changes/{ch['id']}/partner/publish", json={})
     assert action(client, "partner")["state"] == "SIMULATED_PUBLISHED"
-    assert json.loads(action(client, "partner")["observed_payload"]) == FACTS
+    assert json.loads(action(client, "partner")["observed_payload"]) == Facts.model_validate(
+        FACTS
+    ).model_dump(mode="json")
 
 
 def test_flyer_facts_match_approved_payload(client):

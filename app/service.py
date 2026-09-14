@@ -5,7 +5,7 @@ import time
 from fastapi import HTTPException
 
 from . import db
-from .domain import FALLBACK, canonical, digest, fact_payload
+from .domain import FALLBACK, Facts, canonical, digest, fact_payload
 
 DESTINATIONS = ("page", "flyer", "partner", "print")
 
@@ -139,7 +139,18 @@ def approve(workspace_id, change_id, revision, plan_hash, replace_current=False,
         ).fetchall()
         if ws["org_id"]:
             dates = set(json.loads(change["facts"])["dates"])
-            current = [old for old in current if dates.intersection(json.loads(old["facts"])["dates"])]
+            proposed = Facts.model_validate_json(change["facts"])
+            spans = [proposed.session_bounds(d) for d in proposed.dates]
+
+            def overlaps(old):
+                previous = Facts.model_validate_json(old["facts"])
+                return bool(dates.intersection(d.isoformat() for d in previous.dates)) or any(
+                    a.timestamp() < y.timestamp() and x.timestamp() < b.timestamp()
+                    for a, b in spans
+                    for x, y in (previous.session_bounds(d) for d in previous.dates)
+                )
+
+            current = [old for old in current if overlaps(old)]
             if any(set(json.loads(old["facts"])["dates"]) - dates for old in current):
                 raise HTTPException(
                     409,

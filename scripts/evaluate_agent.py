@@ -20,7 +20,7 @@ async def evaluate(cases):
         started = time.monotonic()
         try:
             proposal, metrics = await interpret(case["source"])
-            actual = proposal.model_dump()
+            actual = proposal.model_dump(mode="json")
             failures = [
                 f"{key} differs"
                 for key, expected in case.get("expected", {}).items()

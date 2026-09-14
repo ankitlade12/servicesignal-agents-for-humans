@@ -50,7 +50,7 @@ def render_notice(payload, public_id, program=None, demo=True, language="en"):
         <div class="notice-alert {"amber" if expired else ""}">{fact("message")}</div>
         <section class="notice-facts"><h2>{copy["previous" if expired else "affected"]}</h2>
         <p class="date-line">{fact("dates")}</p><p>{fact("start_time")}–{fact("end_time")} · {fact("timezone")}</p>
-        <p class="venue">{fact("location")}</p><p>{fact("room")}</p><p class="muted">{fact("kind")} · {fact("expired")}</p></section>
+        <p class="small">{fact("session_times")}</p><p class="venue">{fact("location")}</p><p>{fact("room")}</p><p class="muted">{fact("kind")} · {fact("expired")}</p></section>
         <p>{fact("contact")}</p><p class="muted">{copy["demo_confirmed" if demo else "confirmed"]}: {esc(approved)}.</p>
         <a class="button" href="/notices/{public_id}/flyer.pdf?lang={language}">{copy["download"]} ↗</a>"""
     return f"""<!doctype html><html lang="{language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -112,6 +112,7 @@ def flyer_pdf(payload, url, draft=False, language="en"):
         visible["kind"],
         ", ".join(f["dates"]),
         f"{f['start_time']}–{f['end_time']} ({f['timezone']})",
+        visible["session_times"],
         f["location"],
         f["room"],
         visible["contact"],
@@ -146,6 +147,6 @@ def render_collection(items, public_id, language="en"):
         selected = language if language == "en" or payload["program_context"].get("spanish_enabled") else "en"
         values = visible_facts(payload, selected)
         cards.append(
-            f'<article class="notice-facts" lang="{selected}"><h2>{esc(values["dates"])}</h2><p>{esc(values["message"])}</p><p>{esc(values["start_time"])}–{esc(values["end_time"])} {esc(values["timezone"])}</p><p>{esc(values["location"])} · {esc(values["room"])}</p><a class="button" href="/notices/{public_id}/changes/{change_id}?lang={selected}">Open this notice and printable flyer</a></article>'
+            f'<article class="notice-facts" lang="{selected}"><h2>{esc(values["dates"])}</h2><p>{esc(values["message"])}</p><p>{esc(values["start_time"])}–{esc(values["end_time"])} {esc(values["timezone"])}</p><p class="small">{esc(values["session_times"])}</p><p>{esc(values["location"])} · {esc(values["room"])}</p><a class="button" href="/notices/{public_id}/changes/{change_id}?lang={selected}">Open this notice and printable flyer</a></article>'
         )
     return f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(context["name"])} notices</title><link rel="stylesheet" href="/static/styles.css?v={asset_version()}"></head><body class="public-body"><main class="public-notice"><h1>{esc(context["name"])}</h1><p>{esc(context["organization"])}</p><p>Each notice applies only to its listed sessions. Open a notice for its confirmed details and current status.</p>{"".join(cards)}</main></body></html>'

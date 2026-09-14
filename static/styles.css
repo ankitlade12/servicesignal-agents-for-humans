@@ -23,3 +23,5 @@ fieldset{border:0;padding:0;margin:0;min-width:0}fieldset:disabled{opacity:.7}.c
 .footer,.public-footer,.nav-label{color:#596550}.footer{font-size:11px}
 
 .hero .eyebrow,.hero p,.stat-top{color:#526044}.tip p{color:#756047}
+
+.table-scroll{overflow-x:auto}.table-scroll table{width:100%;border-collapse:collapse}.table-scroll th,.table-scroll td{padding:10px;text-align:left;border-bottom:1px solid #dce1d7;vertical-align:top}.table-scroll small{display:block;overflow-wrap:anywhere}.spaced-panel code{overflow-wrap:anywhere}#time-preview li{overflow-wrap:anywhere}#directory-confirm .input{min-width:0}

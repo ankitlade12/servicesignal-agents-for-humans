@@ -61,7 +61,7 @@ bash scripts/start.sh
 
 Strands provides an [official OpenAI adapter](https://strandsagents.com/docs/user-guide/concepts/model-providers/openai/). This app uses that adapter, including streaming, read-only tools, and structured output. The configured default is [GPT-5.4 mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini); `AGENT_MODEL_ID` is configurable. The [hackathon rules](https://agentsforhumans.devpost.com/rules) require Strands and do not specify a required model provider, so this integration appears compatible. AWS account/Builder ID requirements still apply.
 
-**No OpenAI key was configured during verification. Live OpenAI execution is pending.** The actual Strands and OpenAI SDKs pass a local HTTP-fixture contract test, including streamed tool calls, structured proposals, and rejection of fabricated quotations. A mocked response does not establish model accuracy or account access. Restart the server after changing provider settings.
+**Live OpenAI through Strands now passes the relocation smoke and all 12 labeled development cases.** Earlier development runs passed 9/12 and 10/12; all results are retained in `artifacts/evaluation*.json`. This is not a held-out benchmark. The actual Strands and OpenAI SDKs pass a local HTTP-fixture contract test, including streamed tool calls, structured proposals, and rejection of fabricated quotations. The fixture test remains separate from the recorded live results. Restart the server after changing provider settings.
 
 ### Amazon Bedrock
 
@@ -118,6 +118,10 @@ The agent uses `read_source` and `get_program_context`, then produces a Pydantic
 - Operator online backups, isolated restore, and explicit private-source retention.
 - Clearly labeled partner simulator and attributed manual print confirmation.
 - Session isolation, same-origin write checks, escaped output, content security policy, model call caps, and seven-day demo-session expiry.
+
+## Timezones, directory exchange and external copies
+
+Overnight sessions, per-date repeated-hour choices, exact UTC previews, HSDS 3.2 service JSON import/export and read-only external HTML/PDF copy checks are implemented. See the [feature guide and key setup](docs/TIME_AND_DIRECTORY.md) for controls and supported boundaries.
 
 ## Scope and known limits
 

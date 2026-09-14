@@ -4,7 +4,7 @@ Verified locally on September 13, 2026. All scenarios use fictional data.
 
 ## Automated release checks
 
-**101 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
+**122 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
 
 `ruff check app tests scripts` and `node --check static/app.js` passed.
 
@@ -40,7 +40,7 @@ The HTTP report includes measured intake and approval-to-verification durations 
 - Strands Agents **1.55.1** installed and API signatures inspected.
 - AWS identity authenticated, but Bedrock catalog and `ConverseStream` invocation returned access denied. The role lacks the tested model's invocation permission.
 - Anthropic through Strands reached the provider, which returned insufficient account credit.
-- No successful live structured extraction was observed. Do not claim otherwise or submit the guided recording as live-model proof.
+- The initial provider checks did not produce live extraction. A later funded OpenAI setup passed the live smoke and final 12/12 development evaluation; see the new release section below. The old guided recording remains fixture evidence.
 - The integration uses bounded read-only tools and structured output. `scripts/smoke_agent.py` records a successful live run only when one actually succeeds.
 
 ## Deployment and external publication
@@ -95,3 +95,14 @@ Browser verification exposed a short-desktop sidebar clipping issue after adding
 Release `6034125` passed [CI](https://github.com/ankitlade12/servicesignal-agents-for-humans/actions/runs/34804587253), including 101 tests, lint, both JavaScript files, image build and running demo/pilot container workflows. Railway deployment `7b8a0a76-88ea-4067-bfb3-25cf7ec9b4ae` started without the migration race and confirmed creation of the initial single-use owner invitation. The invitation is stored privately outside version control; the owner must choose their own password.
 
 The hosted sign-in page rendered correctly with no browser exceptions (`artifacts/hosted-login.png`). HTTPS API checks returned health 200, worker readiness 200, pilot mode 200 and private workspace 401 (`artifacts/hosted-http-check.json`). These checks do not constitute authenticated hosted acceptance or a live-model evaluation. Email, SMS and WordPress remain optional and disabled; their navigation is hidden when unconfigured.
+
+
+## Extended time, directory and copy release
+
+The release suite passes 122 tests. New cases cover next-day expiration and public/PDF intervals, both repeated-hour choices, nonexistent times, overnight clock transitions, stale approval rejection after changing offsets, HSDS validation/review/import idempotence/source preservation, authorization, URL restrictions, mixed DNS, pinned TLS connections, private redirects and external observations that cannot mark partner publication verified.
+
+OpenAI now has a successful live smoke (`artifacts/live-agent-smoke.json`). The first development evaluation passed 9/12, the second 10/12 and the final 12/12. Earlier reports are preserved in `artifacts/evaluation-first-live.json` and `artifacts/evaluation-second-live.json`; the final report is `artifacts/evaluation.json`. Source-quotation rejection, explicit context-field instructions, tracking actual source/context tool calls and removing empty clarification strings addressed observed failures. This is a small, repeatedly used development set; it is not a held-out benchmark or evidence of community impact.
+
+See `docs/TIME_AND_DIRECTORY.md` for supported exchange and inspection boundaries. No outside website was edited, no external message was sent and no real community data was imported.
+
+Browser verification on the isolated pilot exercised overnight fact confirmation, actual worker publication, a real read-only HTTPS request to example.com returning `REVIEW_REQUIRED`, and upload → preview → confirmed HSDS import. The imported fictional program remained unconfigured, retained its original directory record and contained zero notices. Screenshots: `overnight-review.png`, `external-copy-check.png`, and `directory-import-mobile.png`. The import form had no automated axe violations at 390px and no horizontal overflow; one manual-review item remains (`extended-accessibility.json`). The browser upload automation was retried with an absolute file path after a relative-path read stalled; the subsequent upload and import completed.

@@ -1,0 +1,32 @@
+{
+  "id": "995d9807-15cb-4d30-aa89-b78f268d8b57",
+  "name": "Fictional Evening Workshop",
+  "status": "active",
+  "organization": {
+    "id": "d0369424-6671-4790-980f-4f1b0c1381c0",
+    "name": "Fictional Example Library",
+    "description": "Fictional test organization; no real service availability."
+  },
+  "schedules": [
+    {
+      "id": "5f3e639c-a8be-4194-a7ce-5f2215b5f008",
+      "description": "Tuesdays, 10 pm to 2 am next day",
+      "freq": "WEEKLY",
+      "byday": "TU",
+      "opens_at": "22:00-05:00",
+      "closes_at": "02:00-05:00"
+    }
+  ],
+  "service_at_locations": [
+    {
+      "id": "de77c260-d6e5-425e-b55f-0cfe518a40ee",
+      "location": {
+        "id": "94c550bf-8549-49d1-91e0-1b6c05164163",
+        "location_type": "physical",
+        "name": "Room Q",
+        "description": "20 Sample Avenue"
+      }
+    }
+  ],
+  "eligibility_description": "Preserved field: fictional adult workshop."
+}

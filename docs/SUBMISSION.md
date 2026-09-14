@@ -28,7 +28,7 @@ The worker verifies visible rendered facts after HTTP publication. A later misma
 
 The local end-to-end publication, read-back, PDFs, QR link, manual/simulated states, and expiry workflow are implemented and tested. The deterministic release suite passes; see `docs/VERIFICATION.md` for the exact recorded result.
 
-**Do not submit this draft as a claim of successful live AI execution yet.** The SDK integration supports OpenAI, Anthropic, and Bedrock through Strands. The OpenAI SDK contract test passes with a local simulated HTTP response; a funded OpenAI key remains unconfigured. The earlier live checks reached the other providers, but Bedrock denied invocation permission and Anthropic rejected the call for insufficient account credit. A successful live smoke run and a working live-agent recording are required before representing the project as a demonstrated Strands agent entry.
+Live OpenAI through Strands passed the two-session relocation smoke and the final 12-case development evaluation. Earlier live development runs passed 9/12 and 10/12; those reports are retained. This small development set is not a held-out accuracy benchmark. The existing narrated video still shows the older fixture workflow and must be updated to demonstrate live execution. Bedrock and Anthropic remain alternative adapters without successful live runs on the development accounts.
 
 No real partner integration, real resident usage, measured time savings, or avoided trips are claimed. Pilot mode adds organization accounts, owner/editor/viewer roles, multiple programs, assigned copy owners, and fresh-approval follow-up drafts. Pilot programs support independent notices on different dates and four core surfaces. English text/scanned-PDF intake is supported; optional Spanish output is off by default.
 
@@ -45,7 +45,7 @@ Official deadline: **September 14, 2026, 5 p.m. PDT / 7 p.m. CDT / September 15,
 | Runnable source, README, MIT license | Public repository prepared; latest checks linked in verification record |
 | Architecture diagram | `docs/architecture.svg` |
 | Working controlled publication and verification | Implemented; see verification evidence |
-| Live Strands execution | OpenAI key pending; earlier Bedrock permission/Anthropic credit failures; live smoke not passed |
+| Live Strands execution | OpenAI live smoke and final 12/12 development evaluation passed; updated live recording still needed |
 | Public repository URL | https://github.com/ankitlade12/servicesignal-agents-for-humans |
 | Persistent hosted demo | Railway invite-only pilot: https://servicesignal-production.up.railway.app; judge access still needs provisioning |
 | Demo video | `artifacts/guided-walkthrough.mp4`, narrated guided demo, 61.1 seconds; must include live execution before submission |

@@ -77,6 +77,3 @@ document.addEventListener('submit',async event=>{
     else toast(error.message,true);
   } finally {button.disabled=false;}
 });
-
-if(location.hash.startsWith('#recover=')) recoveryScreen(location.hash.slice(9));
-else boot();

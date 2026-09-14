@@ -13,6 +13,19 @@ def migrate(c):
         if name not in columns:
             c.execute(f"ALTER TABLE users ADD COLUMN {name} {definition}")
     c.executescript("""
+    CREATE TABLE IF NOT EXISTS directory_imports (
+        id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+        source TEXT NOT NULL, expires_at REAL NOT NULL, imported TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS directory_sources (
+        workspace_id TEXT PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE,
+        source TEXT NOT NULL, source_hash TEXT NOT NULL, created_at REAL NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS external_checks (
+        id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+        change_id TEXT NOT NULL REFERENCES changes(id) ON DELETE CASCADE, revision INTEGER NOT NULL,
+        url TEXT NOT NULL, result TEXT NOT NULL, created_at REAL NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS password_resets (
         token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id),
         expires_at REAL NOT NULL, used INTEGER NOT NULL DEFAULT 0

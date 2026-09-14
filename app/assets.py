@@ -8,6 +8,6 @@ STATIC = Path(__file__).resolve().parent.parent / "static"
 
 def version():
     digest = hashlib.sha256()
-    for name in ("app.js", "features.js", "styles.css", "typography.css"):
+    for name in ("app.js", "features.js", "capabilities.js", "styles.css", "typography.css"):
         digest.update((STATIC / name).read_bytes())
     return digest.hexdigest()[:16]
