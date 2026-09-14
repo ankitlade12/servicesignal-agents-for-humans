@@ -89,3 +89,9 @@ The authenticated separate-process HTTP smoke also passed locally (`artifacts/pi
 Twelve new tests pass for TOTP enrollment, replay rejection, single-use recovery codes, encrypted email reset and retained MFA, independent date-disjoint notices, overlap protection, owner-approved email, uncertain-send handling, Twilio status polling, WordPress pre-write conflict/public read-back, encrypted backup/restore and corrupted-file rejection, and actual scanned-PDF OCR. Provider-specific tests use simulated HTTP/SMTP responses; no real external message or CMS write was sent.
 
 Browser verification exposed a short-desktop sidebar clipping issue after adding account controls. Scrollable desktop navigation fixes it. Login, account-security forms, Connections loading, disabled provider controls, operational status and 390px mobile layout were inspected; no browser exceptions were reported. Optional delivery navigation is now hidden when providers are unconfigured, per the current product scope.
+
+## Hosted release acceptance
+
+Release `6034125` passed [CI](https://github.com/ankitlade12/servicesignal-agents-for-humans/actions/runs/34804587253), including 101 tests, lint, both JavaScript files, image build and running demo/pilot container workflows. Railway deployment `7b8a0a76-88ea-4067-bfb3-25cf7ec9b4ae` started without the migration race and confirmed creation of the initial single-use owner invitation. The invitation is stored privately outside version control; the owner must choose their own password.
+
+The hosted sign-in page rendered correctly with no browser exceptions (`artifacts/hosted-login.png`). HTTPS API checks returned health 200, worker readiness 200, pilot mode 200 and private workspace 401 (`artifacts/hosted-http-check.json`). These checks do not constitute authenticated hosted acceptance or a live-model evaluation. Email, SMS and WordPress remain optional and disabled; their navigation is hidden when unconfigured.

@@ -1,0 +1,36 @@
+[
+  {
+    "path": "/api/health",
+    "status": 200,
+    "body": {
+      "status": "ok",
+      "provider": "fixture",
+      "model_id": null,
+      "demo": false,
+      "sdk": "Strands Agents",
+      "version": "0.1.0"
+    }
+  },
+  {
+    "path": "/api/ready",
+    "status": 200,
+    "body": {
+      "status": "ready",
+      "worker": {
+        "ready": true,
+        "last_seen_seconds": 1
+      }
+    }
+  },
+  {
+    "path": "/api/account/mode",
+    "status": 200,
+    "body": {
+      "mode": "pilot"
+    }
+  },
+  {
+    "path": "/api/workspace",
+    "status": 401
+  }
+]
