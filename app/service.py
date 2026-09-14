@@ -20,7 +20,7 @@ def get_change(c, workspace_id, change_id):
 
 
 def plan_for(change, public_id):
-    return {
+    plan = {
         "change_id": change["id"],
         "revision": change["revision"],
         "facts": json.loads(change["facts"]),
@@ -29,11 +29,14 @@ def plan_for(change, public_id):
         "destinations": list(DESTINATIONS),
         "expiration_notice": FALLBACK,
     }
+    if change.get("plan_context"):
+        plan["context"] = json.loads(change["plan_context"])
+    return plan
 
 
 def serialize(c, change):
     change = dict(change)
-    for key in ("proposal", "facts", "metrics"):
+    for key in ("proposal", "facts", "metrics", "created_by", "confirmed_by", "approved_by", "plan_context"):
         change[key] = json.loads(change[key]) if change[key] else None
     change["actions"] = [
         dict(r)
@@ -45,7 +48,7 @@ def serialize(c, change):
     return change
 
 
-def review(workspace_id, change_id, revision, facts):
+def review(workspace_id, change_id, revision, facts, actor=None):
     with db.connect(write=True) as c:
         change = get_change(c, workspace_id, change_id)
         if revision != change["revision"] or change["state"] not in (
@@ -66,11 +69,21 @@ def review(workspace_id, change_id, revision, facts):
         pub_version = c.execute(
             "SELECT version FROM publications WHERE workspace_id=?", (workspace_id,)
         ).fetchone()[0]
+        ws = c.execute("SELECT * FROM workspaces WHERE id=?", (workspace_id,)).fetchone()
+        plan_context = canonical(
+            {
+                "program": context,
+                "inventory": db.inventory(ws),
+                "languages": ["en", "es"] if context.get("spanish_enabled") else ["en"],
+            }
+        )
         change.update(
+            plan_context=plan_context,
             revision=revision + 1,
             facts=canonical(facts.model_dump(mode="json")),
             expected_version=pub_version,
         )
+        c.execute("UPDATE changes SET plan_context=? WHERE id=?", (plan_context, change_id))
         public_id = c.execute("SELECT public_id FROM workspaces WHERE id=?", (workspace_id,)).fetchone()[0]
         plan_hash = digest(plan_for(change, public_id))
         c.execute(
@@ -78,20 +91,29 @@ def review(workspace_id, change_id, revision, facts):
                      expected_version=?,expires_at=? WHERE id=?""",
             (change["revision"], change["facts"], plan_hash, pub_version, facts.expires_at(), change_id),
         )
+        if actor:
+            c.execute("UPDATE changes SET confirmed_by=? WHERE id=?", (canonical(actor), change_id))
         db.event(
             c,
             workspace_id,
             change_id,
             "FACTS_CONFIRMED",
-            "Demo coordinator confirmed exact dates, venue, hours, and program scope.",
+            f"{actor['name'] if actor else 'Demo coordinator'} confirmed exact dates, venue, hours, and program scope.",
         )
         return serialize(c, get_change(c, workspace_id, change_id))
 
 
-def approve(workspace_id, change_id, revision, plan_hash, replace_current=False):
+def approve(workspace_id, change_id, revision, plan_hash, replace_current=False, actor=None):
     with db.connect(write=True) as c:
         change = get_change(c, workspace_id, change_id)
         ws = c.execute("SELECT * FROM workspaces WHERE id=?", (workspace_id,)).fetchone()
+        if ws["org_id"]:
+            user = c.execute(
+                "SELECT id FROM users WHERE id=? AND org_id=? AND active=1 AND role='owner'",
+                ((actor or {}).get("id"), ws["org_id"]),
+            ).fetchone()
+            if not user:
+                raise HTTPException(403, "An active organization owner must approve publication.")
         if change["revision"] != revision or change["plan_hash"] != plan_hash:
             raise HTTPException(409, "The plan changed. Review the latest version before approving.")
         # Repeated requests for exactly the same approval do not enqueue more writes.
@@ -102,6 +124,8 @@ def approve(workspace_id, change_id, revision, plan_hash, replace_current=False)
             "ENDED",
         ):
             return serialize(c, change)
+        if change.get("plan_context") and json.loads(change["plan_context"])["program"] != db.program(ws):
+            raise HTTPException(409, "The program baseline changed. Reconfirm the facts before approving.")
         if change["state"] != "READY_FOR_REVIEW" or digest(plan_for(change, ws["public_id"])) != plan_hash:
             raise HTTPException(409, "Confirm the facts before approving this exact plan.")
         version = c.execute(
@@ -128,6 +152,8 @@ def approve(workspace_id, change_id, revision, plan_hash, replace_current=False)
                 (previous[0],),
             )
         c.execute("UPDATE changes SET state='APPLYING',approved_at=? WHERE id=?", (now, change_id))
+        if actor:
+            c.execute("UPDATE changes SET approved_by=? WHERE id=?", (canonical(actor), change_id))
         for dest in DESTINATIONS:
             state = {"page": "QUEUED", "flyer": "QUEUED", "partner": "NEEDS_OWNER", "print": "NEEDS_OWNER"}[
                 dest
@@ -135,7 +161,11 @@ def approve(workspace_id, change_id, revision, plan_hash, replace_current=False)
             detail = {
                 "page": "Waiting for publication and HTTP read-back.",
                 "flyer": "Waiting for approved publication.",
-                "partner": "Simulated partner: awaiting editor publication. No external message sent.",
+                "partner": (
+                    "Partner owner must publish the correction; no external message sent."
+                    if ws["org_id"]
+                    else "Simulated partner: awaiting editor publication. No external message sent."
+                ),
                 "print": "A person must replace printed copies.",
             }[dest]
             c.execute(
@@ -213,8 +243,9 @@ def publish_job(job_id, key):
             change["revision"],
             change["approved_at"],
             expired,
-            db.program(ws),
+            db.approved_context(change, ws),
         )
+        payload["demo"] = not bool(ws["org_id"])
         c.execute(
             "UPDATE publications SET version=version+1,payload=?,action_key=? WHERE workspace_id=?",
             (canonical(payload), action_key, ws["id"]),

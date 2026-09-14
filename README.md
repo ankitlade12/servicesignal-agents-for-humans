@@ -2,7 +2,7 @@
 
 **When a community program changes, approve the correction once. Update connected notices and see what still needs attention.**
 
-A working prototype for the **Agents for Humans · Good Neighbor Agents** track. ServiceSignal helps a community-center coordinator manage temporary class changes across an owned website, printable notices, a simulated partner listing, and printed-copy tasks.
+A working application with a fictional demo and an authenticated pilot mode for the **Agents for Humans · Good Neighbor Agents** track. ServiceSignal helps a community-center coordinator manage temporary class changes across an owned website, printable notices, partner-owner follow-up, and printed-copy tasks. Partner simulation is available only in demo mode.
 
 [Source repository](https://github.com/ankitlade12/servicesignal-agents-for-humans) · [Narrated guided walkthrough](artifacts/guided-walkthrough.mp4) · [Submission readiness](docs/SUBMISSION.md)
 
@@ -33,6 +33,17 @@ The default `AGENT_PROVIDER=fixture` mode only recognizes the two built-in examp
 8. Export the evidence from Activity. Reset deletes this workspace and invalidates its public link.
 
 Every isolated workspace starts its **demo clock at September 13, 2026**, so the fictional September scenario remains replayable throughout judging. The clock advances normally from there, or through the labeled demo controls. Past changes relative to that demo clock are rejected. Session expiry still uses real elapsed time. These dates never claim current real-world service availability.
+
+## Organization pilot mode
+
+Set `SERVICESIGNAL_MODE=pilot` in `.env` before starting. An operator provisions the organization owner; there is no public signup.
+
+```bash
+PYTHONPATH=. uv run python scripts/manage_accounts.py create-organization \
+  --organization "Your organization" --email "owner@example.org" --name "Coordinator name"
+```
+
+The command prompts for a password without putting it in shell history. The owner signs in, confirms the program baseline, and can invite editors/viewers and add programs. Only owners approve publication. Invitations are single-use, email-bound links; the app sends no email. Pilot links persist after logout and demo cleanup does not delete pilot data. See the [account and operations runbook](docs/DEPLOYMENT.md). Use fictional information until a consenting organization and its authorized owner are established.
 
 ## Live Strands configuration
 
@@ -82,7 +93,9 @@ The agent uses `read_source` and `get_program_context`, then produces a Pydantic
 ## Implemented
 
 - Responsive coordinator overview, intake, source evidence, fact review, approval, delivery tracking, program, public-notice, and activity screens.
-- One configurable organization/program baseline per isolated demo session, including recurring weekdays, IANA timezone, venue, hours, and public contact instructions. Setup locks after the first draft to preserve scope.
+- Persistent organization accounts, owner/editor/viewer roles, invitations, revocation, password changes, named approval records, and multiple programs in pilot mode.
+- Confirmed program baselines, recurring weekdays, IANA timezone, venue, hours, and public contacts. Pilot baseline edits cannot rewrite existing approved notices; demo setup locks after the first draft.
+- Registered partner and print owners, reference URL and placement notes, snapshotted into each reviewed plan. No external URL is fetched or written.
 - Private text-PDF intake up to 3 pages / 5 MB / 6,000 extracted characters; original bytes, content hash, page-marked extraction, deduplication, and original download. Bounded subprocess parsing rejects scanned, encrypted, malformed, oversized, and overlong documents.
 - Baseline/proposal comparison, page/line evidence references, private revision-bound PDF preview before approval, and preservation of entered form values after validation errors.
 - Worker readiness endpoint and UI warning; resident HTML/PDF show the approved expiration fallback even when the worker is stopped.
@@ -91,17 +104,19 @@ The agent uses `read_source` and `get_program_context`, then produces a Pydantic
 - Separate worker, SQLite WAL transactions, job leases, bounded retries, restart reconciliation, and idempotent publication.
 - Actual controlled publication, fresh rendered-HTML comparison, timestamped evidence, and recurring 15-minute drift checks.
 - Expiration reminders and an approved unconfirmed-state fallback; no automatic venue reversion.
-- Downloadable English PDF and permanent QR link. Residents do not need an account.
+- English-first HTML/PDF and permanent QR link. Optional fixed Spanish notices are off by default and require owner review before enablement; each enabled language is verified separately. Residents do not need an account.
+- Extend, restore, or new-arrangement follow-up drafts; each needs fresh confirmation and approval.
+- Operator online backups, isolated restore, and explicit private-source retention.
 - Clearly labeled partner simulator and attributed manual print confirmation.
 - Session isolation, same-origin write checks, escaped output, content security policy, model call caps, and seven-day demo-session expiry.
 
 ## Scope and known limits
 
-This is a fictional prototype, not a live community service. It supports **one program, four registered surfaces, English pasted-text or text-PDF intake, and one active public notice per workspace**. A replacement approval explicitly supersedes the previous notice and its entire session list.
+The demo uses fictional data; no real organization has piloted the product. Pilot mode supports multiple organizations/programs on one persistent host, **four fixed surfaces and one active public notice per program**. Replacement approval supersedes the previous notice and its entire session list.
 
-The original [PRD](ServiceSignal_PRD.md) is broader than this implementation. Reviewed Spanish output, OCR, arbitrary discovery, real partner/email/SMS integrations, real organization accounts, PostgreSQL/S3, and HSDS export are deferred. The frontend uses plain browser JavaScript and system fonts; SQLite keeps this prototype reproducible on one persistent host. Deploy exactly one API and worker pair with shared persistent storage.
+The original [PRD](ServiceSignal_PRD.md) is broader than this implementation. OCR, arbitrary discovery, real partner/email/SMS integrations, PostgreSQL/S3, and HSDS export remain deferred. English is the initial language; Spanish is optional based on demonstrated community need, not a launch requirement. The frontend uses plain browser JavaScript and system fonts; SQLite requires exactly one API/worker pair with shared persistent storage.
 
-The source text, original uploaded PDF, extracted proposal, and human edits remain private to the demo session. Public links expose only approved projections and expire after seven days. Reset is irreversible within the demo. Expired workspaces are deleted on creation of a new session. Production retention, backup deletion, stronger authentication, abuse protection, and operational monitoring still need a real deployment design. No resident data is collected.
+Sources and original PDFs stay private to authorized workspace members. Public links expose approved facts and confirmed baseline information. Demo links expire after seven days or reset; pilot links remain available after logout. Pilot accounts use scrypt password hashing, expiring HttpOnly sessions, role checks and login limits. MFA, managed identity, self-service recovery, an independent security review, scheduled off-host backups, and deployment-specific monitoring remain operational work. No resident identity is collected.
 
 The QR link reflects the latest publication; already printed text and forwarded screenshots remain outside automated control. PDF accessibility is not certified. Verification records what was observed at a timestamp; worker/network downtime can delay writes and monitoring. A running API independently serves the approved expiration fallback after the final session; it does not mark that transition as worker-verified. Generated PDFs are tested for factual consistency, not arbitrary layouts or all languages.
 
@@ -138,6 +153,7 @@ See [deployment instructions](docs/DEPLOYMENT.md). Keep the volume persistent, c
 - [Demo narration and recording plan](docs/DEMO_SCRIPT.md)
 - [Pilot and adoption plan](docs/PILOT.md)
 - [Complete requirement audit and launch gates](docs/PRODUCT_READINESS.md)
+- [Competitors, differentiation, and validation](docs/COMPETITIVE_POSITIONING.md)
 - [Research and attribution](docs/ATTRIBUTION.md)
 
 No live deployment, Devpost entry, public video upload, or community impact is implied by the presence of these files. Check the readiness checklist before submitting. ServiceSignal is a working title; unrelated products already use the name.

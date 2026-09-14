@@ -66,6 +66,8 @@ def process(job, client=None):
     client = client or httpx.Client(
         base_url=os.getenv("PUBLISHER_ORIGIN", "http://127.0.0.1:8000"), timeout=10, follow_redirects=False
     )
+    mismatch = None
+    observations = {}
     try:
         # The publisher reconciles duplicate action keys before attempting another write.
         if job["kind"] != "verify":
@@ -77,16 +79,35 @@ def process(job, client=None):
             change["revision"],
             change["approved_at"],
             job["kind"] == "expire",
-            db.program(ws),
+            db.approved_context(change, ws),
         )
-        page = client.get(
-            f"/notices/{ws['public_id']}?verification={job['id']}", headers={"Cache-Control": "no-cache"}
+        languages = (
+            json.loads(change["plan_context"]).get("languages", ["en"])
+            if change.get("plan_context")
+            else ["en"]
         )
-        page.raise_for_status()
-        parsed = FactParser()
-        parsed.feed(page.text)
-        if parsed.facts != visible_facts(expected):
-            raise ValueError("Published page does not match approved facts. Owner review required.")
+        english_facts = None
+        mismatch = None
+        for language in languages:
+            page = client.get(
+                f"/notices/{ws['public_id']}?verification={job['id']}&lang={language}",
+                headers={"Cache-Control": "no-cache"},
+            )
+            page.raise_for_status()
+            parsed = FactParser()
+            parsed.feed(page.text)
+            observations[language] = {
+                "facts": parsed.facts,
+                "sha256": digest(parsed.facts),
+                "observed_at": time.time(),
+            }
+            expected_fields = visible_facts(expected, language)
+            differences = [key for key in expected_fields if parsed.facts.get(key) != expected_fields[key]]
+            if differences or parsed.facts.keys() != expected_fields.keys():
+                mismatch = f"{language}: " + ", ".join(differences or ["unexpected fields"])
+                raise ValueError("Published fields differ from the approved plan.")
+            if language == "en":
+                english_facts = parsed.facts
         with db.connect(write=True) as c:
             current = c.execute("SELECT revision,state FROM changes WHERE id=?", (change["id"],)).fetchone()
             if not current or current["revision"] != job["revision"] or current["state"] == "SUPERSEDED":
@@ -97,16 +118,20 @@ def process(job, client=None):
                 """UPDATE actions SET state='VERIFIED',detail=?,verified_at=?,observed_hash=?,
                 observed_payload=?,attempts=? WHERE change_id=? AND revision=? AND destination='page'""",
                 (
-                    "Fresh HTTP read matched every approved visible field."
+                    "Fresh HTTP reads matched every approved visible field in " + ", ".join(languages) + "."
                     if job["kind"] != "expire"
                     else "Expiration notice independently checked; future arrangements remain unconfirmed.",
                     now,
-                    digest(parsed.facts),
-                    json.dumps(parsed.facts),
+                    digest(english_facts),
+                    json.dumps(english_facts),
                     job["attempts"],
                     change["id"],
                     job["revision"],
                 ),
+            )
+            c.execute(
+                "UPDATE actions SET locale_evidence=? WHERE change_id=? AND revision=? AND destination='page'",
+                (json.dumps(observations), change["id"], job["revision"]),
             )
             if job["kind"] != "verify":
                 c.execute(
@@ -159,12 +184,19 @@ def process(job, client=None):
             if not exhausted
             else "Retries exhausted. Use Retry after checking the server."
         )
+        if mismatch:
+            detail = "Visible fields differ from approval: " + mismatch + ". Owner review required."
         log.warning("job=%s category=%s", job["id"], type(error).__name__)
         with db.connect(write=True) as c:
             c.execute(
                 "UPDATE actions SET state=?,detail=?,attempts=? WHERE change_id=? AND revision=? AND destination='page' AND state!='CANCELED'",
                 (state, detail, job["attempts"], change["id"], job["revision"]),
             )
+            if observations:
+                c.execute(
+                    "UPDATE actions SET locale_evidence=? WHERE change_id=? AND revision=? AND destination='page' AND state!='CANCELED'",
+                    (json.dumps(observations), change["id"], job["revision"]),
+                )
             due = db.now(c, ws["id"]) + (15, 60, 300, 300)[min(job["attempts"] - 1, 3)]
             c.execute(
                 "UPDATE jobs SET state=?,due_at=? WHERE id=? AND state!='CANCELED'",

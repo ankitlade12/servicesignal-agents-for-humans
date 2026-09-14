@@ -9,13 +9,14 @@ import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import agent, db, service
+from . import accounts, agent, assets, db, service
 from .domain import AMBIGUOUS_EXAMPLE, EXAMPLE, FALLBACK, Facts, Program, canonical, digest
 from .notices import flyer_pdf, qr_svg, render_notice
 
@@ -30,6 +31,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="ServiceSignal", version="0.1.0", lifespan=lifespan)
+app.include_router(accounts.router)
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 
 
@@ -57,6 +59,8 @@ async def security_headers(request, call_next):
 
 
 def workspace(request: Request):
+    if accounts.pilot_mode():
+        return accounts.scoped_workspace(request)
     token = request.cookies.get("servicesignal_session", "")
     hashed = hashlib.sha256(token.encode()).hexdigest()
     with db.connect() as c:
@@ -96,7 +100,11 @@ class Clock(StrictBody):
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return FileResponse(ROOT / "static/index.html")
+    page = (ROOT / "static/index.html").read_text()
+    stamp = assets.version()
+    for name in ("app.js", "styles.css", "typography.css"):
+        page = page.replace("/static/" + name, "/static/" + name + "?v=" + stamp)
+    return HTMLResponse(page)
 
 
 @app.get("/api/health")
@@ -107,7 +115,7 @@ def health():
         "status": "ok",
         "provider": agent.provider(),
         "model_id": os.getenv("AGENT_MODEL_ID") or None,
-        "demo": True,
+        "demo": not accounts.pilot_mode(),
         "sdk": "Strands Agents",
         "version": "0.1.0",
     }
@@ -115,6 +123,9 @@ def health():
 
 @app.post("/api/session")
 def start_session(request: Request, response: Response):
+    if accounts.pilot_mode():
+        ws = workspace(request)
+        return {"public_id": ws["public_id"]}
     try:
         ws = workspace(request)
         return {"public_id": ws["public_id"]}
@@ -122,7 +133,7 @@ def start_session(request: Request, response: Response):
         pass
     with db.connect(write=True) as c:
         # Bound anonymous demo storage. Expired sessions and their private data are removed.
-        c.execute("DELETE FROM workspaces WHERE created_at<?", (time.time() - 7 * 86400,))
+        c.execute("DELETE FROM workspaces WHERE org_id IS NULL AND created_at<?", (time.time() - 7 * 86400,))
         if c.execute("SELECT count(*) FROM workspaces").fetchone()[0] >= 1000:
             raise HTTPException(429, "The demo is at capacity. Please try again later.")
         token, workspace_id, public_id = (
@@ -176,8 +187,34 @@ def dashboard(ws=Depends(workspace)):
         ]
         pub = dict(c.execute("SELECT * FROM publications WHERE workspace_id=?", (ws["id"],)).fetchone())
         current_time = db.now(c, ws["id"])
+        programs = (
+            [
+                {"id": r["id"], "name": db.program(r)["name"]}
+                for r in c.execute(
+                    "SELECT * FROM workspaces WHERE org_id=? ORDER BY created_at", (ws.get("org_id"),)
+                )
+            ]
+            if ws.get("org_id")
+            else []
+        )
+        team = (
+            [
+                dict(r)
+                for r in c.execute(
+                    "SELECT id,name,email,role,active FROM users WHERE org_id=?", (ws["org_id"],)
+                )
+            ]
+            if ws.get("actor", {}).get("role") == "owner"
+            else []
+        )
     return {
         "program": db.program(ws),
+        "mode": "pilot" if ws.get("org_id") else "demo",
+        "actor": ws.get("actor"),
+        "workspace_id": ws["id"],
+        "programs": programs,
+        "inventory": db.inventory(ws),
+        "team": team,
         "public_id": ws["public_id"],
         "changes": changes,
         "events": events,
@@ -195,6 +232,8 @@ def dashboard(ws=Depends(workspace)):
 
 @app.post("/api/changes")
 async def intake(body: Intake, ws=Depends(workspace)):
+    if ws.get("org_id") and not db.program(ws).get("configured", True):
+        raise HTTPException(409, "An owner must configure and confirm the program baseline first.")
     source = body.source.strip()
     source_hash = digest(source)
     change_id = secrets.token_urlsafe(16)
@@ -214,8 +253,13 @@ async def intake(body: Intake, ws=Depends(workspace)):
         ).fetchone()
         if existing:
             return service.serialize(c, existing)
-        if c.execute("SELECT count(*) FROM changes WHERE workspace_id=?", (ws["id"],)).fetchone()[0] >= 30:
-            raise HTTPException(429, "This demo supports 30 changes per workspace. Reset to start again.")
+        if c.execute("SELECT count(*) FROM changes WHERE workspace_id=?", (ws["id"],)).fetchone()[0] >= (
+            1000 if ws.get("org_id") else 30
+        ):
+            raise HTTPException(
+                429,
+                "This program has reached its change-record limit. Export its history and contact the operator.",
+            )
         if agent.provider() != "fixture":
             day = datetime.now(timezone.utc).date().isoformat()
             c.execute("INSERT OR IGNORE INTO usage_days VALUES(?,0)", (day,))
@@ -235,6 +279,8 @@ async def intake(body: Intake, ws=Depends(workspace)):
             "INSERT INTO changes(id,workspace_id,source,source_hash,proposal,state,created_at,mode) VALUES(?,?,?,?,?,?,?,?)",
             (change_id, ws["id"], source, source_hash, "{}", "INTERPRETING", time.time(), agent.provider()),
         )
+        if ws.get("actor"):
+            c.execute("UPDATE changes SET created_by=? WHERE id=?", (canonical(ws["actor"]), change_id))
     try:
         proposal, metrics = await agent.interpret(source, context)
     except Exception as error:
@@ -295,12 +341,15 @@ def review(change_id: str, body: Review, ws=Depends(workspace)):
             change["state"] == "INTERPRETING" and time.time() - change["created_at"] > 100
         ):
             c.execute("UPDATE changes SET state='DRAFT' WHERE id=?", (change_id,))
-    return service.review(ws["id"], change_id, body.revision, body.facts)
+    return service.review(ws["id"], change_id, body.revision, body.facts, ws.get("actor"))
 
 
 @app.post("/api/changes/{change_id}/approve")
 def approve(change_id: str, body: Approval, ws=Depends(workspace)):
-    return service.approve(ws["id"], change_id, body.revision, body.plan_hash, body.replace_current)
+    require_workspace_owner(ws)
+    return service.approve(
+        ws["id"], change_id, body.revision, body.plan_hash, body.replace_current, ws.get("actor")
+    )
 
 
 @app.post("/api/changes/{change_id}/retry")
@@ -334,6 +383,8 @@ def retry(change_id: str, ws=Depends(workspace)):
 
 @app.post("/api/changes/{change_id}/partner/{action}")
 def partner(change_id: str, action: str, ws=Depends(workspace)):
+    if ws.get("org_id"):
+        raise HTTPException(403, "Partner simulation is available only in demo workspaces.")
     if action not in ("acknowledge", "publish", "fail"):
         raise HTTPException(422, "Unknown simulator action.")
     with db.connect(write=True) as c:
@@ -374,17 +425,19 @@ def print_confirm(change_id: str, ws=Depends(workspace)):
         if not ready or ready[0] != "REPLACEMENT_READY":
             raise HTTPException(409, "Wait until the printable replacement is ready.")
         c.execute(
-            "UPDATE actions SET state='MANUALLY_CONFIRMED',detail='Demo coordinator reports replacing printed copies. Not digitally verified.' WHERE change_id=? AND destination='print'",
+            "UPDATE actions SET state='MANUALLY_CONFIRMED',detail='Coordinator reports replacing printed copies. Not digitally verified.' WHERE change_id=? AND destination='print'",
             (change_id,),
         )
         db.event(
-            c, ws["id"], change_id, "MANUALLY_CONFIRMED", "Demo coordinator reports replacing printed copies."
+            c, ws["id"], change_id, "MANUALLY_CONFIRMED", "Coordinator reports replacing printed copies."
         )
     return {"confirmed": True}
 
 
 @app.post("/api/demo/clock")
 def advance_clock(body: Clock, ws=Depends(workspace)):
+    if ws.get("org_id"):
+        raise HTTPException(403, "Live programs use the real clock.")
     if body.stage not in ("reminder", "expiry"):
         raise HTTPException(422, "Choose reminder or expiry.")
     with db.connect(write=True) as c:
@@ -406,6 +459,8 @@ def advance_clock(body: Clock, ws=Depends(workspace)):
 
 @app.post("/api/demo/reset")
 def reset(response: Response, ws=Depends(workspace)):
+    if ws.get("org_id"):
+        raise HTTPException(403, "Live program history cannot be removed by a demo reset.")
     with db.connect(write=True) as c:
         c.execute("DELETE FROM workspaces WHERE id=?", (ws["id"],))
     response.delete_cookie("servicesignal_session")
@@ -430,11 +485,13 @@ def controlled_publish(job_id: str, x_publisher_key: str = Header(default="")):
 def public_workspace(public_id):
     with db.connect() as c:
         row = c.execute(
-            "SELECT * FROM workspaces WHERE public_id=? AND created_at>?",
+            "SELECT * FROM workspaces WHERE public_id=? AND (org_id IS NOT NULL OR created_at>?)",
             (public_id, time.time() - 7 * 86400),
         ).fetchone()
     if not row:
-        raise HTTPException(404, "This demo notice is unavailable or has been reset.")
+        raise HTTPException(404, "This notice is unavailable or has been withdrawn.")
+    if row["org_id"] and not db.program(row).get("configured", True):
+        raise HTTPException(404, "The organization has not confirmed this program's details.")
     return dict(row)
 
 
@@ -453,8 +510,13 @@ def publication(public_id):
 
 
 @app.get("/notices/{public_id}", response_class=HTMLResponse)
-def notice(public_id: str):
-    return render_notice(publication(public_id), public_id, db.program(public_workspace(public_id)))
+def notice(public_id: str, lang: Literal["en", "es"] = "en"):
+    ws = public_workspace(public_id)
+    payload = publication(public_id)
+    context = payload.get("program_context", db.program(ws)) if payload else db.program(ws)
+    if lang == "es" and not context.get("spanish_enabled"):
+        raise HTTPException(404, "Spanish output has not been approved for this notice.")
+    return render_notice(payload, public_id, context, demo=not bool(ws.get("org_id")), language=lang)
 
 
 def public_url(public_id):
@@ -468,12 +530,14 @@ def qr(public_id: str):
 
 
 @app.get("/notices/{public_id}/flyer.pdf")
-def flyer(public_id: str):
+def flyer(public_id: str, lang: Literal["en", "es"] = "en"):
     payload = publication(public_id)
     if not payload:
         raise HTTPException(404, "Approve and publish a notice before downloading a flyer.")
+    if lang == "es" and not payload.get("program_context", {}).get("spanish_enabled"):
+        raise HTTPException(404, "Spanish output has not been approved for this notice.")
     return Response(
-        flyer_pdf(payload, public_url(public_id)),
+        flyer_pdf(payload, public_url(public_id) + ("?lang=es" if lang == "es" else ""), language=lang),
         media_type="application/pdf",
         headers={"Content-Disposition": 'attachment; filename="community-notice.pdf"'},
     )
@@ -481,11 +545,27 @@ def flyer(public_id: str):
 
 @app.post("/api/program")
 def configure_program(body: Program, ws=Depends(workspace)):
+    require_workspace_owner(ws)
+    if ws.get("org_id") and body.organization != ws["organization"]:
+        raise HTTPException(422, "Use your account's organization name.")
     with db.connect(write=True) as c:
-        if c.execute("SELECT 1 FROM changes WHERE workspace_id=? LIMIT 1", (ws["id"],)).fetchone():
+        if (
+            not ws.get("org_id")
+            and c.execute("SELECT 1 FROM changes WHERE workspace_id=? LIMIT 1", (ws["id"],)).fetchone()
+        ):
             raise HTTPException(
                 409,
                 "Program setup is locked after the first draft to preserve source and approval scope. Reset this demo before configuring another program.",
+            )
+        if (
+            ws.get("org_id")
+            and c.execute(
+                "SELECT 1 FROM changes WHERE workspace_id=? AND approved_at IS NOT NULL AND plan_context IS NULL AND state!='SUPERSEDED'",
+                (ws["id"],),
+            ).fetchone()
+        ):
+            raise HTTPException(
+                409, "An older approved plan must be superseded before changing the baseline."
             )
         c.execute("UPDATE workspaces SET program=? WHERE id=?", (canonical(body.model_dump()), ws["id"]))
         db.event(
@@ -493,7 +573,9 @@ def configure_program(body: Program, ws=Depends(workspace)):
             ws["id"],
             None,
             "PROGRAM_CONFIGURED",
-            "Coordinator confirmed this workspace's program baseline. Demonstration mode remains active.",
+            "Organization owner confirmed the program baseline for future changes."
+            if ws.get("org_id")
+            else "Coordinator confirmed this workspace's program baseline. Demonstration mode remains active.",
         )
     return body
 
@@ -606,7 +688,7 @@ def readiness():
 
 
 @app.get("/api/changes/{change_id}/preview.pdf")
-def preview_flyer(change_id: str, revision: int, ws=Depends(workspace)):
+def preview_flyer(change_id: str, revision: int, lang: Literal["en", "es"] = "en", ws=Depends(workspace)):
     from .domain import fact_payload
 
     with db.connect() as c:
@@ -618,10 +700,130 @@ def preview_flyer(change_id: str, revision: int, ws=Depends(workspace)):
             ws["public_id"],
             revision,
             db.now(c, ws["id"]),
-            program=db.program(ws),
+            program=db.approved_context(change, ws),
         )
+        payload["demo"] = not bool(ws.get("org_id"))
     return Response(
-        flyer_pdf(payload, public_url(ws["public_id"]), draft=True),
+        flyer_pdf(payload, public_url(ws["public_id"]), draft=True, language=lang),
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="draft-revision-{revision}.pdf"'},
     )
+
+
+def require_workspace_owner(ws):
+    if ws.get("org_id") and ws.get("actor", {}).get("role") != "owner":
+        raise HTTPException(403, "An organization owner must approve this action.")
+
+
+class Inventory(StrictBody):
+    partner_name: str = Field(min_length=2, max_length=100)
+    partner_owner: str = Field(default="", max_length=120)
+    partner_url: str = Field(default="", max_length=500)
+    print_owner: str = Field(default="", max_length=120)
+    print_notes: str = Field(default="", max_length=500)
+
+
+@app.post("/api/inventory")
+def configure_inventory(body: Inventory, ws=Depends(workspace)):
+    from urllib.parse import urlsplit
+
+    require_workspace_owner(ws)
+    if body.partner_url:
+        try:
+            url = urlsplit(body.partner_url)
+            if url.scheme != "https" or not url.hostname or url.username or url.password:
+                raise ValueError()
+        except ValueError:
+            raise HTTPException(
+                422, "Use an HTTPS public listing URL without embedded credentials."
+            ) from None
+    with db.connect(write=True) as c:
+        c.execute("UPDATE workspaces SET inventory=? WHERE id=?", (canonical(body.model_dump()), ws["id"]))
+        db.event(
+            c,
+            ws["id"],
+            None,
+            "INVENTORY_UPDATED",
+            "Registered the partner listing and print owners for future approval plans. Existing approved plans retain their snapshot.",
+        )
+    return body
+
+
+class FollowUp(StrictBody):
+    arrangement: str
+    dates: list[str] = Field(min_length=1, max_length=12)
+
+
+@app.post("/api/changes/{change_id}/follow-up")
+def follow_up(change_id: str, body: FollowUp, ws=Depends(workspace)):
+    from .domain import Proposal
+
+    if body.arrangement not in ("extend", "restore", "new"):
+        raise HTTPException(422, "Choose extend, confirmed baseline, or a new arrangement.")
+    with db.connect(write=True) as c:
+        previous = service.get_change(c, ws["id"], change_id)
+        if not previous["approved_at"] or previous["state"] == "SUPERSEDED":
+            raise HTTPException(409, "Choose the current approved notice for follow-up.")
+        context = db.program(ws)
+        old = json.loads(previous["facts"])
+        base = old if body.arrangement == "extend" else context
+        candidate = {
+            **old,
+            "program": context["name"],
+            "timezone": context["timezone"],
+            "dates": body.dates,
+            "location": base["location"],
+            "room": base["room"],
+            "start_time": base["start_time"],
+            "end_time": base["end_time"],
+        }
+        if body.arrangement != "extend":
+            candidate["kind"] = "relocation"
+        try:
+            facts = Facts.model_validate(candidate)
+        except ValueError:
+            raise HTTPException(422, "Use valid exact dates and unambiguous session times.") from None
+        if facts.expires_at() <= db.now(c, ws["id"]) or any(
+            d.weekday() not in context["weekdays"] for d in facts.dates
+        ):
+            raise HTTPException(422, "Choose future dates on the program's confirmed weekdays.")
+        source = f"Coordinator requested a {body.arrangement} draft after notice {change_id}, revision {previous['revision']}. Proposed facts: {canonical(candidate)}. These are suggestions requiring fresh confirmation, not confirmed future availability."
+        source_hash = digest(source)
+        existing = c.execute(
+            "SELECT * FROM changes WHERE workspace_id=? AND source_hash=?", (ws["id"], source_hash)
+        ).fetchone()
+        if existing:
+            return service.serialize(c, existing)
+        if c.execute("SELECT count(*) FROM changes WHERE workspace_id=?", (ws["id"],)).fetchone()[0] >= (
+            1000 if ws.get("org_id") else 30
+        ):
+            raise HTTPException(429, "The program has reached its change-record limit.")
+        proposal = Proposal(
+            **candidate,
+            questions=["Confirm the next arrangement with the program owner before approving this draft."],
+            explanation="Prepared from the prior arrangement and selected dates. No future availability has been inferred or published.",
+        )
+        if body.arrangement == "new":
+            proposal.location = proposal.room = ""
+        new_id = secrets.token_urlsafe(16)
+        c.execute(
+            "INSERT INTO changes(id,workspace_id,source,source_hash,proposal,state,created_at,mode,metrics,created_by) VALUES(?,?,?,?,?,'NEEDS_CLARIFICATION',?,'manual',?,?)",
+            (
+                new_id,
+                ws["id"],
+                source,
+                source_hash,
+                canonical(proposal.model_dump()),
+                time.time(),
+                canonical({"live": False, "origin": "coordinator_follow_up", "previous_change": change_id}),
+                canonical(ws["actor"]) if ws.get("actor") else None,
+            ),
+        )
+        db.event(
+            c,
+            ws["id"],
+            new_id,
+            "FOLLOW_UP_DRAFTED",
+            "Prepared a new arrangement for explicit fact confirmation and a separate approval. Existing publication is unchanged.",
+        )
+        return service.serialize(c, service.get_change(c, ws["id"], new_id))

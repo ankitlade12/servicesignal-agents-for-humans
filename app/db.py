@@ -81,7 +81,36 @@ def init():
         columns = {row[1] for row in c.execute("PRAGMA table_info(workspaces)")}
         if "program" not in columns:
             c.execute("ALTER TABLE workspaces ADD COLUMN program TEXT")
+        if "org_id" not in columns:
+            c.execute("ALTER TABLE workspaces ADD COLUMN org_id TEXT")
+        if "inventory" not in columns:
+            c.execute("ALTER TABLE workspaces ADD COLUMN inventory TEXT")
+        change_columns = {row[1] for row in c.execute("PRAGMA table_info(changes)")}
+        for column in ("created_by", "confirmed_by", "approved_by", "plan_context"):
+            if column not in change_columns:
+                c.execute(f"ALTER TABLE changes ADD COLUMN {column} TEXT")
+        action_columns = {row[1] for row in c.execute("PRAGMA table_info(actions)")}
+        if "locale_evidence" not in action_columns:
+            c.execute("ALTER TABLE actions ADD COLUMN locale_evidence TEXT")
         c.executescript("""
+        CREATE TABLE IF NOT EXISTS organizations (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY, org_id TEXT NOT NULL REFERENCES organizations(id),
+            email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('owner','editor','viewer')), active INTEGER NOT NULL DEFAULT 1,
+            created_at REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS sessions (
+            token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id),
+            workspace_id TEXT REFERENCES workspaces(id) ON DELETE SET NULL, expires_at REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS invitations (
+            token_hash TEXT PRIMARY KEY, org_id TEXT NOT NULL REFERENCES organizations(id),
+            email TEXT NOT NULL, role TEXT NOT NULL, expires_at REAL NOT NULL, used INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS login_limits (key TEXT PRIMARY KEY, attempts INTEGER NOT NULL, reset_at REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS account_events (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id TEXT NOT NULL,
+            actor_id TEXT, kind TEXT NOT NULL, detail TEXT NOT NULL, created_at REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS documents (
             id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
             sha256 TEXT NOT NULL, original BLOB NOT NULL, source TEXT NOT NULL, pages INTEGER NOT NULL,
@@ -108,3 +137,23 @@ def program(workspace):
 
     raw = dict(workspace).get("program")
     return json.loads(raw) if raw else dict(PROGRAM)
+
+
+def inventory(workspace):
+    saved = dict(workspace).get("inventory")
+    return (
+        json.loads(saved)
+        if saved
+        else {
+            "partner_name": "Partner directory",
+            "partner_owner": "",
+            "partner_url": "",
+            "print_owner": "",
+            "print_notes": "",
+        }
+    )
+
+
+def approved_context(change, workspace):
+    saved = dict(change).get("plan_context")
+    return json.loads(saved)["program"] if saved else program(workspace)

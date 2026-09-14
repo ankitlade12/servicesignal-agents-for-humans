@@ -1,4 +1,6 @@
 # ServiceSignal
+
+> Scope update: English is the default. Spanish is optional and off unless audience need and owner language review justify it; it is not a launch requirement. This document preserves the original broader proposal. See [current requirement audit](docs/PRODUCT_READINESS.md) for implemented scope and remaining work.
 ## Product requirements document · v1.0
 
 > **Implementation update — September 13, 2026:** A scoped prototype now exists. See [README](README.md) for implemented behavior and [verification](docs/VERIFICATION.md) for measured checks. This planning document includes deferred requirements; it is not a claim that all features or live model access are complete.

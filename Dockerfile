@@ -5,8 +5,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY app ./app
 COPY static ./static
-COPY scripts/start.sh ./scripts/start.sh
-COPY scripts/run.py ./scripts/run.py
+COPY scripts ./scripts
 RUN useradd --create-home signal && mkdir -p data && chown -R signal:signal /app
 USER signal
 ENV SERVICESIGNAL_HOST=0.0.0.0 SERVICESIGNAL_PORT=8017

@@ -2,12 +2,13 @@
   "passed": true,
   "provider": "fixture",
   "live_model": false,
-  "intake_including_session_ms": 13,
-  "approval_to_verified_ms": 274,
+  "intake_including_session_ms": 9,
+  "approval_to_verified_ms": 781,
   "scenario": "actual HTTP intake, approval, worker publication, visible read-back, PDF, partner refusal, expiry",
   "scope": "one fictional local run; not p95 or evidence of model quality or staff time saved",
   "publication": {
-    "approved_at": 1789300800.019242,
+    "approved_at": 1789300800.0131848,
+    "demo": true,
     "expired": false,
     "facts": {
       "dates": [
@@ -25,37 +26,40 @@
     "message": "Applies only to the sessions listed below. Other activities are unchanged.",
     "program_context": {
       "contact": "",
+      "contact_es": "",
       "end_time": "20:00",
       "location": "100 Example Avenue",
       "name": "Digital Basics",
       "organization": "Maple Community Center",
       "room": "Room A",
       "schedule": "Tuesdays, 6\u20138 p.m.",
+      "spanish_enabled": false,
       "start_time": "18:00",
       "timezone": "America/Chicago",
       "weekdays": [
         1
       ]
     },
-    "public_id": "qf3Z-PHCDqzs3OV1XYlM7Zsk",
+    "public_id": "2QQ3KGkdIcCmHTVBfAoMjds6",
     "revision": 2
   },
   "actions": [
     {
-      "id": "vZ4uyrXLDEsPYX2Wegen7Q",
-      "change_id": "rf84LLCcybXYv61mInhomQ",
+      "id": "Wzp7PLY6OOP6KhRMeis_xA",
+      "change_id": "X4zR3c-4oGzeP7aapUIcKg",
       "revision": 2,
       "destination": "page",
       "state": "VERIFIED",
-      "detail": "Fresh HTTP read matched every approved visible field.",
-      "verified_at": 1789300800.143608,
+      "detail": "Fresh HTTP reads matched every approved visible field in en.",
+      "verified_at": 1789300800.695119,
       "observed_hash": "fb5ea6172234b4bc1d60d8297ccb7b19bba7d858441db976b635504be3b44435",
       "observed_payload": "{\"program\": \"Digital Basics\", \"organization\": \"Maple Community Center\", \"message\": \"Applies only to the sessions listed below. Other activities are unchanged.\", \"dates\": \"Sep 15, 2026; Sep 22, 2026\", \"start_time\": \"18:00\", \"end_time\": \"20:00\", \"timezone\": \"America/Chicago\", \"location\": \"200 Sample Street\", \"room\": \"Room B\", \"kind\": \"Temporary venue change\", \"expired\": \"Only the listed sessions are affected\", \"contact\": \"\"}",
-      "attempts": 1
+      "attempts": 1,
+      "locale_evidence": "{\"en\": {\"facts\": {\"program\": \"Digital Basics\", \"organization\": \"Maple Community Center\", \"message\": \"Applies only to the sessions listed below. Other activities are unchanged.\", \"dates\": \"Sep 15, 2026; Sep 22, 2026\", \"start_time\": \"18:00\", \"end_time\": \"20:00\", \"timezone\": \"America/Chicago\", \"location\": \"200 Sample Street\", \"room\": \"Room B\", \"kind\": \"Temporary venue change\", \"expired\": \"Only the listed sessions are affected\", \"contact\": \"\"}, \"sha256\": \"fb5ea6172234b4bc1d60d8297ccb7b19bba7d858441db976b635504be3b44435\", \"observed_at\": 1789355168.8495202}}"
     },
     {
-      "id": "O4vRlPiWgUrRJOiDhQE4tA",
-      "change_id": "rf84LLCcybXYv61mInhomQ",
+      "id": "vDTGj9dr5UCrGthfQtDFNg",
+      "change_id": "X4zR3c-4oGzeP7aapUIcKg",
       "revision": 2,
       "destination": "flyer",
       "state": "REPLACEMENT_READY",
@@ -63,11 +67,12 @@
       "verified_at": null,
       "observed_hash": null,
       "observed_payload": null,
-      "attempts": 0
+      "attempts": 0,
+      "locale_evidence": null
     },
     {
-      "id": "B0t5AkSADQ67u2Ct9JKXVg",
-      "change_id": "rf84LLCcybXYv61mInhomQ",
+      "id": "ebJAz5Vl7t2xJRZDiW_MUw",
+      "change_id": "X4zR3c-4oGzeP7aapUIcKg",
       "revision": 2,
       "destination": "partner",
       "state": "NEEDS_OWNER",
@@ -75,11 +80,12 @@
       "verified_at": null,
       "observed_hash": null,
       "observed_payload": null,
-      "attempts": 0
+      "attempts": 0,
+      "locale_evidence": null
     },
     {
-      "id": "4m5sXl9AlAsSF0qnyFydnw",
-      "change_id": "rf84LLCcybXYv61mInhomQ",
+      "id": "XVo00cF4SWdlb3VMCPfudA",
+      "change_id": "X4zR3c-4oGzeP7aapUIcKg",
       "revision": 2,
       "destination": "print",
       "state": "NEEDS_OWNER",
@@ -87,11 +93,13 @@
       "verified_at": null,
       "observed_hash": null,
       "observed_payload": null,
-      "attempts": 0
+      "attempts": 0,
+      "locale_evidence": null
     }
   ],
   "expired_publication": {
-    "approved_at": 1789300800.019242,
+    "approved_at": 1789300800.0131848,
+    "demo": true,
     "expired": true,
     "facts": {
       "dates": [
@@ -109,19 +117,21 @@
     "message": "This temporary arrangement has ended. Details for future sessions need confirmation.",
     "program_context": {
       "contact": "",
+      "contact_es": "",
       "end_time": "20:00",
       "location": "100 Example Avenue",
       "name": "Digital Basics",
       "organization": "Maple Community Center",
       "room": "Room A",
       "schedule": "Tuesdays, 6\u20138 p.m.",
+      "spanish_enabled": false,
       "start_time": "18:00",
       "timezone": "America/Chicago",
       "weekdays": [
         1
       ]
     },
-    "public_id": "qf3Z-PHCDqzs3OV1XYlM7Zsk",
+    "public_id": "2QQ3KGkdIcCmHTVBfAoMjds6",
     "revision": 2
   }
 }

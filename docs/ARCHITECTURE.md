@@ -36,7 +36,7 @@ At expiry, the worker prioritizes the approved fallback and cancels remaining in
 
 After successful initial publication, a recurring read-only verification job runs every 15 minutes. Drift stops verification and requests owner review; it does not automatically overwrite newer content. No additional model call is needed to compare known fields.
 
-Each workspace's fictional clock begins September 13, 2026 and advances from a stored offset, keeping the fixed scenario replayable during judging. Session lifetime, worker leases, and network timeouts use real time; program approval, due jobs, and expiration use the isolated demo clock.
+Each demo workspace's fictional clock begins September 13, 2026 and advances from a stored offset, keeping the fixed scenario replayable during judging. Session lifetime, worker leases, and network timeouts use real time; program approval, due jobs, and expiration use the isolated demo clock.
 
 ## Deployment boundary
 
@@ -44,13 +44,21 @@ This prototype runs one API and one worker on a persistent host, sharing the sam
 
 ## Differences from the planning PRD
 
-The runnable implementation chooses plain JavaScript instead of React, SQLite instead of PostgreSQL, and generated in-memory PDFs instead of S3 assets. One program and four surfaces keep the complete flow demonstrable. Text-based PDFs are now preserved privately and extracted in a resource-limited subprocess. Arbitrary crawls, reviewed translations, and external directory writes are absent. The README is the source of truth for implemented scope; the PRD remains a record of the larger proposal.
+The runnable implementation chooses plain JavaScript instead of React, SQLite instead of PostgreSQL, and generated in-memory PDFs instead of S3 assets. Pilot organizations can own multiple program workspaces, each with four fixed surfaces and one active notice. Text-based PDFs are now preserved privately and extracted in a resource-limited subprocess. Arbitrary crawls and external directory writes are absent. Fixed Spanish notices are optional and off by default. The README is the source of truth for implemented scope; the PRD remains a record of the larger proposal.
 
 
 ## Program scope and resident expiry safeguard
 
-Program setup validates IANA timezones, same-day hours, recurring weekdays, and public contact instructions. Program details lock after the first draft. Intake snapshots the current context under the same database write transaction that creates the change; concurrent setup cannot make the agent interpret stale program context. Review enforces the configured name, timezone, and weekdays. Daylight-saving gaps and repeated hours are rejected for explicit clarification.
+Program setup validates IANA timezones, same-day hours, recurring weekdays, and public contact instructions. Demo program details lock after the first draft. Pilot owners may edit the baseline; reviewed plans snapshot program context and existing approved notices retain their context. Intake snapshots the current context under the same database write transaction that creates the change; concurrent setup cannot make the agent interpret stale program context. Review enforces the configured name, timezone, and weekdays. Daylight-saving gaps and repeated hours are rejected for explicit clarification.
 
 The published payload includes program/organization/contact context. Read-back compares the resident-visible organization and contact as well as session facts. After the approved final session ends, the resident read path applies the preapproved fallback even if the durable expiry job has not run. It performs no guessed restoration and does not change the worker's verification evidence.
 
-Worker claims record a real-time heartbeat. Readiness fails after 90 seconds without a heartbeat. Program clocks remain fictional; leases, upload limits, subprocess timeouts, and readiness use real time.
+Worker claims record a real-time heartbeat. Readiness fails after 90 seconds without a heartbeat. Pilot clocks use real time; demo clocks remain fictional; leases, upload limits, subprocess timeouts, and readiness use real time.
+
+## Pilot identity and immutable context
+
+Pilot requests require a 12-hour account session and an active organization membership. Owner, editor and viewer permissions are enforced server-side; publication additionally verifies the active owner inside the approval transaction. Named creation, confirmation and approval actors are stored privately. Owner-issued invitations bind an email, role, expiry and single-use token; only token hashes are stored. Password changes and member deactivation revoke sessions. The operator provisions owners and handles password recovery.
+
+Each review binds its program baseline, enabled languages and partner/print inventory to the approval hash. A changed baseline invalidates a pending approval until reconfirmed, while approved notices keep their immutable context. The worker reconstructs and reads back every enabled language, recording facts, hash and observation time per language. Follow-up choices only create drafts; they cannot alter the published notice without a new approval.
+
+Content hashes version JavaScript and stylesheets so a deployment cannot silently reuse a previous interface from browser cache.

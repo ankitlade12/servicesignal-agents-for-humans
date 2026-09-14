@@ -25,3 +25,13 @@ jobs:
             sleep 1
           done
           PYTHONPATH=. uv run python scripts/http_smoke.py
+      - name: Verify organization pilot container
+        run: |
+          docker run --detach --name servicesignal-pilot --publish 127.0.0.1:8018:8017 --env SERVICESIGNAL_MODE=pilot --env PUBLIC_ORIGIN=http://127.0.0.1:8018 servicesignal:verify
+          trap 'docker logs servicesignal-pilot; docker stop servicesignal-pilot' EXIT
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --fail --silent http://127.0.0.1:8018/api/health; then break; fi
+            sleep 1
+          done
+          docker exec --env PYTHONPATH=. servicesignal-pilot .venv/bin/python scripts/pilot_smoke.py --bootstrap
+          PYTHONPATH=. uv run python scripts/pilot_smoke.py

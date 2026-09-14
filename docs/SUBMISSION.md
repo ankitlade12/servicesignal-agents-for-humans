@@ -30,7 +30,7 @@ The local end-to-end publication, read-back, PDFs, QR link, manual/simulated sta
 
 **Do not submit this draft as a claim of successful live AI execution yet.** The SDK integration supports OpenAI, Anthropic, and Bedrock through Strands. The OpenAI SDK contract test passes with a local simulated HTTP response; a funded OpenAI key remains unconfigured. The earlier live checks reached the other providers, but Bedrock denied invocation permission and Anthropic rejected the call for insufficient account credit. A successful live smoke run and a working live-agent recording are required before representing the project as a demonstrated Strands agent entry.
 
-No real partner integration, real resident usage, measured time savings, or avoided trips are claimed. One configurable program, one active notice, English text/PDF intake, and four registered surfaces define this prototype.
+No real partner integration, real resident usage, measured time savings, or avoided trips are claimed. Pilot mode adds organization accounts, owner/editor/viewer roles, multiple programs, assigned copy owners, and fresh-approval follow-up drafts. Each program supports one active notice and four fixed surfaces. English text/PDF intake is supported; optional Spanish output is off by default.
 
 ## Originality and next steps
 
@@ -42,7 +42,7 @@ Official deadline: **September 14, 2026, 5 p.m. PDT / 7 p.m. CDT / September 15,
 
 | Item | Current readiness |
 |---|---|
-| Runnable source, README, MIT license | Prepared locally |
+| Runnable source, README, MIT license | Public repository prepared; latest checks linked in verification record |
 | Architecture diagram | `docs/architecture.svg` |
 | Working controlled publication and verification | Implemented; see verification evidence |
 | Live Strands execution | OpenAI key pending; earlier Bedrock permission/Anthropic credit failures; live smoke not passed |

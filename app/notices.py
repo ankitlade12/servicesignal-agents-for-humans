@@ -10,55 +10,56 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
 
+from .assets import version as asset_version
 from .domain import PROGRAM, visible_facts
+from .localization import COPY
 
 
-def render_notice(payload, public_id, program=None):
+def render_notice(payload, public_id, program=None, demo=True, language="en"):
     esc = html.escape
+    copy = COPY[language]
     context = payload.get("program_context", PROGRAM) if payload else (program or PROGRAM)
     name, organization = esc(context["name"]), esc(context["organization"])
+    badge = " · " + copy["demo"] if demo else ""
+    switch = (
+        f'<nav aria-label="Language"><a href="/notices/{public_id}" lang="en">English</a> · <a href="/notices/{public_id}?lang=es" lang="es">Español</a></nav>'
+        if context.get("spanish_enabled")
+        else ""
+    )
     if not payload:
-        body = f"""<span class="eyebrow">REGULAR PROGRAM · FICTIONAL DEMO</span><h1>{name}</h1>
-        <p class="lead">A little confidence. A world of possibilities.</p>
-        <section class="notice-facts"><h2>Regular program details</h2><p>{esc(context["schedule"])}</p>
-        <p>{esc(context["location"])} · {esc(context["room"])}</p><p>{organization}</p></section>
-        <p class="muted">Seeded program information. No temporary update has been published.</p>"""
+        body = f'<span class="eyebrow">{copy["regular"]}{badge}</span><h1>{name}</h1><section class="notice-facts"><h2>{copy["baseline"]}</h2><p>{esc(context["schedule"])}</p><p>{esc(context["location"])} · {esc(context["room"])}</p><p>{organization}</p></section><p>{copy["unpublished"]}</p>'
     else:
-        values = visible_facts(payload)
+        values = visible_facts(payload, language)
 
         def fact(key):
             return f'<span data-fact="{key}">{esc(values[key])}</span>'
 
         expired = payload["expired"]
-        heading = (
-            "Please check before your next visit"
+        heading = copy[
+            "ended_heading"
             if expired
-            else (
-                "These sessions are canceled"
-                if payload["facts"]["kind"] == "cancellation"
-                else "An update for your next visit"
-            )
-        )
+            else "cancel"
+            if payload["facts"]["kind"] == "cancellation"
+            else "update"
+        ]
         approved = datetime.fromtimestamp(
             payload["approved_at"], ZoneInfo(payload["facts"]["timezone"])
-        ).strftime("%b %d, %Y at %I:%M %p %Z")
-        body = f"""<span class="eyebrow">COMMUNITY NOTICE · FICTIONAL DEMO</span><h1>{heading}</h1>
-        <p class="lead">{fact("program")} at {fact("organization")}</p>
+        ).strftime("%Y-%m-%d %H:%M %Z")
+        body = f"""<span class="eyebrow">{copy["notice"]}{badge}</span><h1>{heading}</h1>
+        <p class="lead">{fact("program")} · {fact("organization")}</p>
         <div class="notice-alert {"amber" if expired else ""}">{fact("message")}</div>
-        <section class="notice-facts"><h2>{"Previous temporary arrangement" if expired else "Affected sessions"}</h2>
+        <section class="notice-facts"><h2>{copy["previous" if expired else "affected"]}</h2>
         <p class="date-line">{fact("dates")}</p><p>{fact("start_time")}–{fact("end_time")} · {fact("timezone")}</p>
-        <p class="venue">{fact("location")}</p><p>{fact("room")}</p>
-        <p class="muted">{fact("kind")} · {fact("expired")}</p></section>
-        <p>{fact("contact")}</p>
-        <p class="muted">Last confirmed by the demo coordinator: {esc(approved)}.</p>
-        <a class="button" href="/notices/{public_id}/flyer.pdf">Download printable notice ↗</a>"""
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>{name} · Community notice</title><meta name="description" content="Current approved program information from {organization}. Fictional demonstration.">
-    <link rel="stylesheet" href="/static/styles.css"><link rel="icon" href="/static/favicon.svg" type="image/svg+xml"></head>
-    <body class="public-body"><a class="skip" href="#notice">Skip to notice</a><header class="public-header"><a href="/">◈ ServiceSignal</a><span>{organization}</span></header>
-    <main id="notice" class="public-notice">{body}<div class="notice-share"><img src="/notices/{public_id}/qr.svg" width="100" height="100" alt="QR code for this permanent notice link">
-    <div><strong>One link. The latest confirmed details.</strong><p>Share this page with someone who attends. No account needed.</p><a href="/notices/{public_id}">Permanent notice link</a></div></div></main>
-    <footer class="public-footer">Demonstration workspace. Program details are entered for testing and are not a verified real service listing.</footer></body></html>"""
+        <p class="venue">{fact("location")}</p><p>{fact("room")}</p><p class="muted">{fact("kind")} · {fact("expired")}</p></section>
+        <p>{fact("contact")}</p><p class="muted">{copy["demo_confirmed" if demo else "confirmed"]}: {esc(approved)}.</p>
+        <a class="button" href="/notices/{public_id}/flyer.pdf?lang={language}">{copy["download"]} ↗</a>"""
+    return f"""<!doctype html><html lang="{language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{name} · {copy["notice"]}</title><meta name="description" content="{copy["notice"]} · {organization}">
+    <link rel="stylesheet" href="/static/styles.css?v={asset_version()}"><link rel="icon" href="/static/favicon.svg" type="image/svg+xml"></head>
+    <body class="public-body"><a class="skip" href="#notice">{copy["skip"]}</a><header class="public-header"><a href="/">◈ ServiceSignal</a><span>{organization}</span></header>
+    <main id="notice" class="public-notice">{switch}{body}<div class="notice-share"><img src="/notices/{public_id}/qr.svg" width="100" height="100" alt="{copy["qr"]}">
+    <div><strong>{copy["share"]}</strong><p>{copy["share_help"]}</p><a href="/notices/{public_id}?lang={language}">{copy["link"]}</a></div></div></main>
+    <footer class="public-footer">{copy["demo_footer" if demo else "footer"]}</footer></body></html>"""
 
 
 class FactParser(HTMLParser):
@@ -88,7 +89,9 @@ def qr_svg(url):
     return out.getvalue()
 
 
-def flyer_pdf(payload, url, draft=False):
+def flyer_pdf(payload, url, draft=False, language="en"):
+    copy = COPY[language]
+    visible = visible_facts(payload, language)
     out = io.BytesIO()
     styles = getSampleStyleSheet()
     styles["Title"].textColor = colors.HexColor("#174c40")
@@ -98,21 +101,21 @@ def flyer_pdf(payload, url, draft=False):
     doc = SimpleDocTemplate(
         out,
         title=payload["facts"]["program"] + " — community notice",
-        author=context["organization"] + " (demonstration)",
+        author=context["organization"] + (" (demonstration)" if payload.get("demo", True) else ""),
     )
     f = payload["facts"]
     lines = [
-        "DRAFT PREVIEW — NOT PUBLISHED" if draft else "FICTIONAL DEMONSTRATION",
+        copy["draft"] if draft else (copy["demo"] if payload.get("demo", True) else copy["notice"]),
         context["organization"],
         f["program"],
-        payload["message"],
-        f"Change: {f['kind']}",
+        visible["message"],
+        visible["kind"],
         ", ".join(f["dates"]),
         f"{f['start_time']}–{f['end_time']} ({f['timezone']})",
         f["location"],
         f["room"],
-        context.get("contact", ""),
-        "Check this permanent link before your next visit:",
+        visible["contact"],
+        copy["check_link"],
         url,
     ]
     story = []
@@ -126,7 +129,7 @@ def flyer_pdf(payload, url, draft=False):
     story.append(Image(png, width=110, height=110))
     story.append(
         Paragraph(
-            "A new file does not replace previously printed copies. HTML is the primary accessible notice.",
+            copy["print_limit"],
             styles["Normal"],
         )
     )

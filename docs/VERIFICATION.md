@@ -4,7 +4,7 @@ Verified locally on September 13, 2026. All scenarios use fictional data.
 
 ## Automated release checks
 
-**63 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
+**87 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
 
 `ruff check app tests scripts` and `node --check static/app.js` passed.
 
@@ -69,3 +69,13 @@ The renewed separate-process HTTP smoke passed with fixture interpretation: 13 m
 Private preapproval PDFs are revision-bound, marked unpublished, and do not mutate publication state. Tests reject cross-workspace access and stale revisions. Source quotations now include deterministic page/line references; unmatched quotations never receive a reference.
 
 The final browser-to-API preview check returned HTTP 200, `application/pdf`, 10,865 bytes; the review page displayed source line references. `artifacts/approval-preview.png` records the final review screen.
+
+## Organization pilot release
+
+The additional 24 tests cover organization login, unconfigured-program protection, named authority, editor/owner handoff, viewer restrictions, email-bound single-use invitations, revocation, password changes, multiple programs and tenant isolation, stable pilot links, demo cleanup separation, login limits and secure cookies. Workflow tests cover immutable baseline/inventory snapshots, three fresh-approval follow-up choices, optional Spanish rendering and independent drift detection. Operator tests cover committed WAL backup, isolated restore without overwrite, explicit source retention and asset versioning.
+
+A separate pilot API and worker ran against an isolated fictional database on localhost:8018. Browser verification exercised owner login, baseline configuration, source review, actual verified publication, an unapproved follow-up draft, team invitation creation, and mobile account controls. No invitation was sent. The final restarted browser showed the current pilot interface, its manual-review provider badge, and no JavaScript exceptions. Content-versioned assets fixed stale cached UI observed during verification.
+
+Artifacts: `pilot-login.png`, `pilot-team.png`, `pilot-mobile.png`, and `release-demo.png`. All identities and service information in these images are fictional. This is local verification, not a real organization pilot or an independently audited authentication system. English remains the default; optional Spanish tests establish template consistency, not professional linguistic or accessibility acceptance.
+
+The authenticated separate-process HTTP smoke also passed locally (`artifacts/pilot-http-smoke.json`). CI runs this scenario against a second container in pilot mode, including operator bootstrap from the image, login, unconfigured-public-page rejection, baseline confirmation, named approval, worker read-back, English PDF, disabled Spanish route, unapproved follow-up, forbidden demo reset, and public access after logout.

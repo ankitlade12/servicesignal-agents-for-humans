@@ -19,6 +19,8 @@ PROGRAM = {
     "end_time": "20:00",
     "weekdays": [1],
     "contact": "",
+    "contact_es": "",
+    "spanish_enabled": False,
 }
 EXAMPLE = (
     "For September 15 and September 22, 2026, Digital Basics will meet in Room B at "
@@ -48,9 +50,13 @@ class Program(BaseModel):
     start_time: str
     end_time: str
     contact: str = Field(default="", max_length=200)
+    contact_es: str = Field(default="", max_length=200)
+    spanish_enabled: bool = False
 
     @model_validator(mode="after")
     def validate_program(self):
+        if self.spanish_enabled and self.contact and not self.contact_es:
+            raise ValueError("Add confirmed Spanish contact instructions before enabling Spanish notices.")
         validate_zone(self.timezone)
         validate_hours(self.start_time, self.end_time)
         if any(d not in range(7) for d in self.weekdays):
@@ -146,25 +152,31 @@ def fact_payload(facts, public_id, revision, approved_at, expired=False, program
     }
 
 
-def visible_facts(payload):
+def visible_facts(payload, language="en"):
+    from .localization import COPY, MONTHS_ES
+
     f = payload["facts"]
+    context = payload.get("program_context", PROGRAM)
+    copy = COPY[language]
+    dates = [date.fromisoformat(d) for d in f["dates"]]
     return {
         "program": f["program"],
-        "organization": payload.get("program_context", PROGRAM)["organization"],
-        "contact": payload.get("program_context", PROGRAM).get("contact", ""),
-        "kind": {
-            "relocation": "Temporary venue change",
-            "cancellation": "Session cancellation",
-            "time_change": "Session time change",
-        }[f["kind"]],
-        "dates": "; ".join(date.fromisoformat(d).strftime("%b %d, %Y") for d in f["dates"]),
+        "organization": context["organization"],
+        "contact": context.get("contact_es" if language == "es" else "contact", ""),
+        "kind": copy[f["kind"]],
+        "dates": "; ".join(
+            f"{d.day} de {MONTHS_ES[d.month - 1]} de {d.year}"
+            if language == "es"
+            else d.strftime("%b %d, %Y")
+            for d in dates
+        ),
         "location": f["location"],
         "room": f["room"],
         "start_time": f["start_time"],
         "end_time": f["end_time"],
         "timezone": f["timezone"],
-        "message": payload["message"],
-        "expired": "This arrangement has ended"
-        if payload["expired"]
-        else "Only the listed sessions are affected",
+        "message": (copy["fallback"] if payload["expired"] else copy["message"])
+        if language == "es"
+        else payload["message"],
+        "expired": copy["ended"] if payload["expired"] else copy["active"],
     }

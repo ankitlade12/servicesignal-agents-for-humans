@@ -32,8 +32,10 @@ The proposed adoption path is: useful notice → partner organization sees it �
 
 ## Sustainable community use
 
-Keep resident access free. Test hosted support funded by community networks, libraries, municipalities, or umbrella nonprofits. Explore contributing the temporary-change workflow to the Open Referral ecosystem if integration yields more value than a separate product. Real multi-organization onboarding and pricing are deferred until demand and operating cost are measured.
+Keep resident access free. Test hosted support funded by community networks, libraries, municipalities, or umbrella nonprofits. Explore contributing the temporary-change workflow to the Open Referral ecosystem if integration yields more value than a separate product. Invite-only organization onboarding is implemented; public self-service onboarding and pricing remain deferred until demand and operating cost are measured.
 
 ## Do not launch with these claims
 
-No “all copies found,” “real-time everywhere,” “prevented wasted trips,” “partnered with 211,” live Spanish support, or confirmed directory integration without direct evidence. Rename the product before investing in acquisition because the ServiceSignal name already has unrelated uses.
+No “all copies found,” “real-time everywhere,” “prevented wasted trips,” “partnered with 211,” professionally validated Spanish support, or confirmed directory integration without direct evidence. Rename the product before investing in acquisition because the ServiceSignal name already has unrelated uses.
+
+English is the initial pilot language. Enable optional Spanish notices only when the actual audience needs them and a fluent coordinator has reviewed every notice template and confirmed contact wording. Language coverage is not the proposed product differentiation.
