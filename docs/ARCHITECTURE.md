@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart LR
-    C[Coordinator browser] -->|pasted source| API[FastAPI]
+    C[Coordinator browser] -->|paste / text PDF| API[FastAPI]
     API --> A[Strands agent]
     A --> R[Read-only source and program tools]
     A -->|validated proposal only| API
@@ -44,4 +44,13 @@ This prototype runs one API and one worker on a persistent host, sharing the sam
 
 ## Differences from the planning PRD
 
-The runnable implementation chooses plain JavaScript instead of React, SQLite instead of PostgreSQL, and generated in-memory PDFs instead of S3 assets. One program and four surfaces keep the complete flow demonstrable. Source files, arbitrary crawls, free-form translations, and external directory writes are absent. The README is the source of truth for implemented scope; the PRD remains a record of the larger proposal.
+The runnable implementation chooses plain JavaScript instead of React, SQLite instead of PostgreSQL, and generated in-memory PDFs instead of S3 assets. One program and four surfaces keep the complete flow demonstrable. Text-based PDFs are now preserved privately and extracted in a resource-limited subprocess. Arbitrary crawls, reviewed translations, and external directory writes are absent. The README is the source of truth for implemented scope; the PRD remains a record of the larger proposal.
+
+
+## Program scope and resident expiry safeguard
+
+Program setup validates IANA timezones, same-day hours, recurring weekdays, and public contact instructions. Program details lock after the first draft. Intake snapshots the current context under the same database write transaction that creates the change; concurrent setup cannot make the agent interpret stale program context. Review enforces the configured name, timezone, and weekdays. Daylight-saving gaps and repeated hours are rejected for explicit clarification.
+
+The published payload includes program/organization/contact context. Read-back compares the resident-visible organization and contact as well as session facts. After the approved final session ends, the resident read path applies the preapproved fallback even if the durable expiry job has not run. It performs no guessed restoration and does not change the worker's verification evidence.
+
+Worker claims record a real-time heartbeat. Readiness fails after 90 seconds without a heartbeat. Program clocks remain fictional; leases, upload limits, subprocess timeouts, and readiness use real time.

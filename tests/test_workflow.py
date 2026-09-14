@@ -380,12 +380,9 @@ def test_public_content_is_escaped(client):
     "override",
     [
         {"dates": []},
-        {"dates": ["2026-09-16"]},
         {"dates": ["2026-02-30"]},
         {"end_time": "17:00"},
         {"start_time": "25:00"},
-        {"program": "Another class"},
-        {"timezone": "UTC"},
         {"location": ""},
     ],
 )

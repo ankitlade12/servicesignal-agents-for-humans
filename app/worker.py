@@ -17,6 +17,7 @@ log = logging.getLogger("servicesignal.worker")
 
 def claim():
     with db.connect(write=True) as c:
+        c.execute("INSERT OR REPLACE INTO settings VALUES('worker_heartbeat',?)", (str(time.time()),))
         c.execute("UPDATE jobs SET state='QUEUED' WHERE state='RUNNING' AND lease_until<?", (time.time(),))
         row = c.execute(
             """SELECT j.* FROM jobs j JOIN changes ch ON ch.id=j.change_id
@@ -76,6 +77,7 @@ def process(job, client=None):
             change["revision"],
             change["approved_at"],
             job["kind"] == "expire",
+            db.program(ws),
         )
         page = client.get(
             f"/notices/{ws['public_id']}?verification={job['id']}", headers={"Cache-Control": "no-cache"}

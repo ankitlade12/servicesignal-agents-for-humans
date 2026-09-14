@@ -11,5 +11,5 @@ RUN useradd --create-home signal && mkdir -p data && chown -R signal:signal /app
 USER signal
 ENV SERVICESIGNAL_HOST=0.0.0.0 SERVICESIGNAL_PORT=8017
 EXPOSE 8017
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD .venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8017/api/health', timeout=3)"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD .venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8017/api/ready', timeout=3)"
 CMD ["bash", "scripts/start.sh"]

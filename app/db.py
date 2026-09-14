@@ -1,3 +1,4 @@
+import json
 import os
 import secrets
 import sqlite3
@@ -76,6 +77,17 @@ def init():
         CREATE INDEX IF NOT EXISTS jobs_due ON jobs(state, due_at);
         CREATE INDEX IF NOT EXISTS change_workspace ON changes(workspace_id, created_at);
         """)
+        c.execute("BEGIN IMMEDIATE")
+        columns = {row[1] for row in c.execute("PRAGMA table_info(workspaces)")}
+        if "program" not in columns:
+            c.execute("ALTER TABLE workspaces ADD COLUMN program TEXT")
+        c.executescript("""
+        CREATE TABLE IF NOT EXISTS documents (
+            id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+            sha256 TEXT NOT NULL, original BLOB NOT NULL, source TEXT NOT NULL, pages INTEGER NOT NULL,
+            created_at REAL NOT NULL, UNIQUE(workspace_id, sha256)
+        );
+        """)
         c.execute("INSERT OR IGNORE INTO settings VALUES ('publisher_key', ?)", (secrets.token_urlsafe(40),))
 
 
@@ -89,3 +101,10 @@ def event(c, workspace_id, change_id, kind, detail):
         "INSERT INTO events(workspace_id,change_id,kind,detail,created_at) VALUES(?,?,?,?,?)",
         (workspace_id, change_id, kind, detail, now(c, workspace_id)),
     )
+
+
+def program(workspace):
+    from .domain import PROGRAM
+
+    raw = dict(workspace).get("program")
+    return json.loads(raw) if raw else dict(PROGRAM)

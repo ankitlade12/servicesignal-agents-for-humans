@@ -14,6 +14,7 @@ jobs:
       - run: uv run ruff check app tests scripts
       - run: uv run pytest -q
       - run: node --check static/app.js
+      - run: PYTHONPATH=. uv run python scripts/evaluate_agent.py --check-cases
       - run: docker build -t servicesignal:verify .
       - name: Verify the running container end to end
         run: |

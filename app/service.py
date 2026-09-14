@@ -54,6 +54,11 @@ def review(workspace_id, change_id, revision, facts):
             "READY_FOR_REVIEW",
         ):
             raise HTTPException(409, "This revision is no longer editable. Refresh or start a new change.")
+        context = db.program(c.execute("SELECT * FROM workspaces WHERE id=?", (workspace_id,)).fetchone())
+        if facts.program != context["name"] or facts.timezone != context["timezone"]:
+            raise HTTPException(422, "Facts must match this workspace's confirmed program and timezone.")
+        if any(d.weekday() not in context["weekdays"] for d in facts.dates):
+            raise HTTPException(422, "Select dates on the program's confirmed recurring weekdays.")
         if facts.expires_at() <= db.now(c, workspace_id):
             raise HTTPException(
                 422, "Those sessions have ended. Choose future sessions or reset the demo clock."
@@ -203,7 +208,12 @@ def publish_job(job_id, key):
         elif pub["version"] != change["expected_version"]:
             raise HTTPException(409, "Destination version conflict.")
         payload = fact_payload(
-            json.loads(change["facts"]), ws["public_id"], change["revision"], change["approved_at"], expired
+            json.loads(change["facts"]),
+            ws["public_id"],
+            change["revision"],
+            change["approved_at"],
+            expired,
+            db.program(ws),
         )
         c.execute(
             "UPDATE publications SET version=version+1,payload=?,action_key=? WHERE workspace_id=?",

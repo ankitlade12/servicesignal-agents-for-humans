@@ -5,12 +5,12 @@ description = "Source-confirmed community notices, from change to verified publi
 requires-python = ">=3.12,<3.15"
 dependencies = [
   "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "httpx>=0.28,<1",
-  "strands-agents[anthropic]>=1.0,<2", "pydantic>=2.10,<3",
-  "reportlab>=4.3,<5", "qrcode>=8,<9", "python-dotenv>=1,<2",
+  "strands-agents[anthropic,openai]>=1.0,<2", "pydantic>=2.10,<3",
+  "pypdf>=5,<7", "reportlab>=4.3,<5", "qrcode>=8,<9", "python-dotenv>=1,<2",
 ]
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "pypdf>=5,<7", "beautifulsoup4>=4.13,<5", "ruff>=0.11,<1"]
+dev = ["pytest>=8,<10", "beautifulsoup4>=4.13,<5", "ruff>=0.11,<1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

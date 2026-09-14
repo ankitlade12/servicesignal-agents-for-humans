@@ -1,8 +1,10 @@
+import asyncio
 import hashlib
 import json
 import logging
 import os
 import secrets
+import sys
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -14,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import agent, db, service
-from .domain import AMBIGUOUS_EXAMPLE, EXAMPLE, FALLBACK, PROGRAM, Facts, canonical, digest
+from .domain import AMBIGUOUS_EXAMPLE, EXAMPLE, FALLBACK, Facts, Program, canonical, digest
 from .notices import flyer_pdf, qr_svg, render_notice
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -72,6 +74,7 @@ class StrictBody(BaseModel):
 
 class Intake(StrictBody):
     source: str = Field(min_length=10, max_length=6000)
+    document_id: str | None = Field(default=None, max_length=100)
 
 
 class Review(StrictBody):
@@ -174,7 +177,7 @@ def dashboard(ws=Depends(workspace)):
         pub = dict(c.execute("SELECT * FROM publications WHERE workspace_id=?", (ws["id"],)).fetchone())
         current_time = db.now(c, ws["id"])
     return {
-        "program": PROGRAM,
+        "program": db.program(ws),
         "public_id": ws["public_id"],
         "changes": changes,
         "events": events,
@@ -183,6 +186,7 @@ def dashboard(ws=Depends(workspace)):
         "provider": agent.provider(),
         "now": current_time,
         "clock_offset": ws["clock_offset"],
+        "worker": worker_status(),
         "example": EXAMPLE,
         "ambiguous_example": AMBIGUOUS_EXAMPLE,
         "fallback": FALLBACK,
@@ -195,6 +199,16 @@ async def intake(body: Intake, ws=Depends(workspace)):
     source_hash = digest(source)
     change_id = secrets.token_urlsafe(16)
     with db.connect(write=True) as c:
+        context = db.program(c.execute("SELECT * FROM workspaces WHERE id=?", (ws["id"],)).fetchone())
+        if body.document_id:
+            document = c.execute(
+                "SELECT source FROM documents WHERE id=? AND workspace_id=?", (body.document_id, ws["id"])
+            ).fetchone()
+            if not document or document[0] != source:
+                raise HTTPException(
+                    422,
+                    "The source must match the preserved PDF extraction. Upload again or submit edited text as a new source.",
+                )
         existing = c.execute(
             "SELECT * FROM changes WHERE workspace_id=? AND source_hash=?", (ws["id"], source_hash)
         ).fetchone()
@@ -222,13 +236,22 @@ async def intake(body: Intake, ws=Depends(workspace)):
             (change_id, ws["id"], source, source_hash, "{}", "INTERPRETING", time.time(), agent.provider()),
         )
     try:
-        proposal, metrics = await agent.interpret(source)
+        proposal, metrics = await agent.interpret(source, context)
     except Exception as error:
         log.warning("Interpretation failed change=%s category=%s", change_id, type(error).__name__)
         with db.connect(write=True) as c:
             c.execute(
                 "UPDATE changes SET state='MODEL_ERROR',metrics=? WHERE id=?",
-                (canonical({"error_category": type(error).__name__, "live": False}), change_id),
+                (
+                    canonical(
+                        {
+                            "error_category": type(error).__name__,
+                            "live": False,
+                            "document_id": body.document_id,
+                        }
+                    ),
+                    change_id,
+                ),
             )
             db.event(
                 c,
@@ -241,6 +264,8 @@ async def intake(body: Intake, ws=Depends(workspace)):
             503,
             "The live agent could not finish. No changes were published. Check model access or open the saved draft to enter facts manually.",
         ) from None
+    if body.document_id:
+        metrics["document_id"] = body.document_id
     state = "NEEDS_CLARIFICATION" if proposal.questions else "DRAFT"
     with db.connect(write=True) as c:
         c.execute(
@@ -402,20 +427,34 @@ def controlled_publish(job_id: str, x_publisher_key: str = Header(default="")):
     return service.publish_job(job_id, x_publisher_key)
 
 
-def publication(public_id):
+def public_workspace(public_id):
     with db.connect() as c:
         row = c.execute(
-            "SELECT p.payload FROM publications p JOIN workspaces w ON p.workspace_id=w.id WHERE w.public_id=? AND w.created_at>?",
+            "SELECT * FROM workspaces WHERE public_id=? AND created_at>?",
             (public_id, time.time() - 7 * 86400),
         ).fetchone()
     if not row:
         raise HTTPException(404, "This demo notice is unavailable or has been reset.")
-    return json.loads(row[0]) if row[0] else None
+    return dict(row)
+
+
+def publication(public_id):
+    ws = public_workspace(public_id)
+    with db.connect() as c:
+        row = c.execute("SELECT payload FROM publications WHERE workspace_id=?", (ws["id"],)).fetchone()
+        now = db.now(c, ws["id"])
+    payload = json.loads(row[0]) if row[0] else None
+    # Serve only the already-approved fallback after the end, even with a stopped worker.
+    # This does not claim that the worker published or verified that transition.
+    if payload and not payload["expired"] and Facts.model_validate(payload["facts"]).expires_at() <= now:
+        payload["expired"] = True
+        payload["message"] = FALLBACK
+    return payload
 
 
 @app.get("/notices/{public_id}", response_class=HTMLResponse)
 def notice(public_id: str):
-    return render_notice(publication(public_id), public_id)
+    return render_notice(publication(public_id), public_id, db.program(public_workspace(public_id)))
 
 
 def public_url(public_id):
@@ -436,5 +475,153 @@ def flyer(public_id: str):
     return Response(
         flyer_pdf(payload, public_url(public_id)),
         media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="digital-basics-notice.pdf"'},
+        headers={"Content-Disposition": 'attachment; filename="community-notice.pdf"'},
+    )
+
+
+@app.post("/api/program")
+def configure_program(body: Program, ws=Depends(workspace)):
+    with db.connect(write=True) as c:
+        if c.execute("SELECT 1 FROM changes WHERE workspace_id=? LIMIT 1", (ws["id"],)).fetchone():
+            raise HTTPException(
+                409,
+                "Program setup is locked after the first draft to preserve source and approval scope. Reset this demo before configuring another program.",
+            )
+        c.execute("UPDATE workspaces SET program=? WHERE id=?", (canonical(body.model_dump()), ws["id"]))
+        db.event(
+            c,
+            ws["id"],
+            None,
+            "PROGRAM_CONFIGURED",
+            "Coordinator confirmed this workspace's program baseline. Demonstration mode remains active.",
+        )
+    return body
+
+
+PDF_SLOTS = asyncio.Semaphore(2)
+
+
+@app.post("/api/documents")
+async def upload_document(request: Request, ws=Depends(workspace)):
+    if request.headers.get("content-type", "").split(";")[0] != "application/pdf":
+        raise HTTPException(415, "Upload a text-based PDF (up to three pages and 5 MB).")
+    raw = bytearray()
+    async for chunk in request.stream():
+        raw.extend(chunk)
+        if len(raw) > 5 * 1024**2:
+            raise HTTPException(413, "PDFs must be no larger than 5 MB.")
+    sha = hashlib.sha256(raw).hexdigest()
+    with db.connect() as c:
+        existing = c.execute(
+            "SELECT id,source,pages FROM documents WHERE workspace_id=? AND sha256=?", (ws["id"], sha)
+        ).fetchone()
+        if existing:
+            return dict(existing)
+    if PDF_SLOTS.locked():
+        raise HTTPException(429, "Document readers are busy. Please try again shortly.")
+    async with PDF_SLOTS:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-m",
+            "app.pdf_intake",
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+            cwd=ROOT,
+        )
+        try:
+            output, _ = await asyncio.wait_for(process.communicate(bytes(raw)), timeout=8)
+            result = json.loads(output)
+        except (asyncio.TimeoutError, ValueError):
+            if process.returncode is None:
+                process.kill()
+            await process.wait()
+            raise HTTPException(
+                422, "This PDF could not be read within the document limits. Paste its verified text instead."
+            ) from None
+        except BaseException:
+            if process.returncode is None:
+                process.kill()
+            await process.wait()
+            raise
+    if process.returncode or "error" in result:
+        raise HTTPException(422, result.get("error", "This PDF could not be read."))
+    with db.connect(write=True) as c:
+        existing = c.execute(
+            "SELECT id,source,pages FROM documents WHERE workspace_id=? AND sha256=?", (ws["id"], sha)
+        ).fetchone()
+        if existing:
+            return dict(existing)
+        count = c.execute("SELECT count(*) FROM documents WHERE workspace_id=?", (ws["id"],)).fetchone()[0]
+        total = c.execute("SELECT coalesce(sum(length(original)),0) FROM documents").fetchone()[0]
+        if count >= 10 or total + len(raw) > 500 * 1024**2:
+            raise HTTPException(429, "Document storage is at capacity. Paste the source text instead.")
+        document_id = secrets.token_urlsafe(16)
+        c.execute(
+            "INSERT INTO documents VALUES(?,?,?,?,?,?,?)",
+            (document_id, ws["id"], sha, bytes(raw), result["source"], result["pages"], time.time()),
+        )
+        db.event(
+            c,
+            ws["id"],
+            None,
+            "SOURCE_PRESERVED",
+            f"Text PDF preserved with {result['pages']} page(s); source SHA-256 {sha}.",
+        )
+    return {"id": document_id, **result}
+
+
+@app.get("/api/documents/{document_id}")
+def original_document(document_id: str, ws=Depends(workspace)):
+    with db.connect() as c:
+        row = c.execute(
+            "SELECT original FROM documents WHERE id=? AND workspace_id=?", (document_id, ws["id"])
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "Source document not found in this workspace.")
+    return Response(
+        bytes(row[0]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="original-source.pdf"'},
+    )
+
+
+def worker_status():
+    with db.connect() as c:
+        row = c.execute("SELECT value FROM settings WHERE key='worker_heartbeat'").fetchone()
+    age = max(0, time.time() - float(row[0])) if row else None
+    return {
+        "ready": age is not None and age < 90,
+        "last_seen_seconds": round(age) if age is not None else None,
+    }
+
+
+@app.get("/api/ready")
+def readiness():
+    status = worker_status()
+    return JSONResponse(
+        {"status": "ready" if status["ready"] else "degraded", "worker": status},
+        status_code=200 if status["ready"] else 503,
+    )
+
+
+@app.get("/api/changes/{change_id}/preview.pdf")
+def preview_flyer(change_id: str, revision: int, ws=Depends(workspace)):
+    from .domain import fact_payload
+
+    with db.connect() as c:
+        change = service.get_change(c, ws["id"], change_id)
+        if change["revision"] != revision or change["state"] != "READY_FOR_REVIEW":
+            raise HTTPException(409, "Save and confirm the current facts before previewing this revision.")
+        payload = fact_payload(
+            json.loads(change["facts"]),
+            ws["public_id"],
+            revision,
+            db.now(c, ws["id"]),
+            program=db.program(ws),
+        )
+    return Response(
+        flyer_pdf(payload, public_url(ws["public_id"]), draft=True),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="draft-revision-{revision}.pdf"'},
     )

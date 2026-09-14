@@ -10,7 +10,7 @@ from app.domain import EXAMPLE
 
 async def main():
     if provider() == "fixture":
-        raise SystemExit("Set AGENT_PROVIDER=anthropic or bedrock for a live smoke test.")
+        raise SystemExit("Set AGENT_PROVIDER=openai, anthropic, or bedrock for a live smoke test.")
     proposal, metrics = await interpret(EXAMPLE)
     assert proposal.dates == ["2026-09-15", "2026-09-22"], proposal.dates
     assert proposal.location == "200 Sample Street", proposal.location

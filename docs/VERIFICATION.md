@@ -4,7 +4,7 @@ Verified locally on September 13, 2026. All scenarios use fictional data.
 
 ## Automated release checks
 
-**43 passed**, latest local run **2.33 seconds**. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The additional replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
+**63 passed** in the latest recorded local run. `artifacts/test-results.xml` contains the machine-readable result. One dependency deprecation warning from Starlette/AnyIO was emitted; it did not fail the suite. The replay test checks that a new demo still accepts its fictional scenario a year after the scenario dates.
 
 `ruff check app tests scripts` and `node --check static/app.js` passed.
 
@@ -52,3 +52,20 @@ A persistent cloud deployment, entrant's AWS Builder ID, public video upload, an
 ## Walkthrough recording
 
 `artifacts/guided-walkthrough.webm` is a real browser recording of the fictional workflow (50.866 seconds). It includes fact review, approval invalidation after an edit, actual publication, partner refusal, resident notice, and expiration. The provider badge identifies guided mode. The MP4 version (61.1 seconds, H.264 video and AAC audio) includes synthetic narration from `docs/walkthrough-narration.txt`, which explicitly states that live model access is pending. The final frame is held while narration finishes.
+
+
+## Expanded product verification
+
+The suite now exercises configurable program names, organizations, contacts, weekdays and timezones; scope rejection against the configured baseline; daylight-saving gaps/repeated hours; private original-PDF preservation and deduplication; cross-workspace document rejection; malformed/scanned/encrypted/oversized PDFs; worker readiness; and resident expiry with the worker deliberately stopped. Three former hardcoded schema assertions became equivalent workspace-level scope checks as part of program generalization.
+
+The real Strands + OpenAI SDK streaming contract is tested against a local HTTP fixture, including the two read-only tools and structured Proposal tool. No real OpenAI key or live model was used. `evals/development-cases.json` contains twelve labeled synthetic cases; dataset structure validates, but live quality evaluation remains unrun.
+
+Browser verification covered a custom Garden Club / Example Library program in America/New_York, Wednesday recurrence, PDF upload, original-source download link, baseline comparison, confirmation, approval, and verified publication. The public page shows the custom organization and contact. Mobile resident and program-setup views both measured 390px document width at a 390px viewport. Setup remained locked after the draft. No JavaScript exceptions were reported. The browser upload needed an absolute filesystem path; the initial automation attempt with a relative file path failed before reaching the API.
+
+New screenshots: `artifacts/custom-program-review.png`, `artifacts/custom-resident-mobile.png`, and `artifacts/program-setup-mobile.png`. `artifacts/source-example.pdf` contains only fictional test data. The existing narrated video predates these additions and remains an honest guided-demo recording, not live-model proof.
+
+The renewed separate-process HTTP smoke passed with fixture interpretation: 13 ms for intake including session and 274 ms from approval to verification in that one local run. These are not model latency or performance percentiles.
+
+Private preapproval PDFs are revision-bound, marked unpublished, and do not mutate publication state. Tests reject cross-workspace access and stale revisions. Source quotations now include deterministic page/line references; unmatched quotations never receive a reference.
+
+The final browser-to-API preview check returned HTTP 200, `application/pdf`, 10,865 bytes; the review page displayed source line references. `artifacts/approval-preview.png` records the final review screen.

@@ -16,10 +16,10 @@ For a hosted VM/container:
 4. Keep `PUBLISHER_ORIGIN=http://127.0.0.1:8017` internal to the container. The worker never accepts visitor-provided destinations.
 5. For Bedrock, use a scoped instance/task role with invocation permission for the chosen model/inference profile. Do not bake credentials into an image or commit them.
 6. Set daily/workspace model-call limits to an appropriate budget. The current limits are call counts, not dollar-cost guarantees.
-7. Check `/api/health`, then complete the actual browser flow. Check the worker logs and verify the public QR target uses the hosted HTTPS origin.
+7. Check `/api/health` (API/database) and `/api/ready` (worker readiness), then complete the actual browser flow. Check the worker logs and verify the public QR target uses the hosted HTTPS origin.
 8. Test a restart after publication, a retry, and expiry. Retain the volume during upgrades.
 
-The health endpoint checks the API/database, not worker liveness. Monitor the worker process and pending jobs independently. If the worker is down, publication, drift checks, and expiration may be delayed. A production process supervisor and alerting configuration remain deployment-specific.
+`/api/health` checks the API/database. `/api/ready` returns 503 if no worker heartbeat has been recorded within 90 seconds; the container health check uses readiness. The coordinator sees a warning while the worker is unavailable. Publication and drift checks can be delayed during outages. A running API shows the already-approved expiration fallback in resident HTML/PDF after the final session, independently of the expiry job; verification status remains an observed worker result. Configure deployment-specific alerts for failed readiness, disk capacity, and queued/failed jobs.
 
 ## External prerequisites still needed
 
@@ -36,4 +36,11 @@ No hosting resources or IAM policies were created by this implementation. The im
 
 ## Data and reset
 
-Sessions use random HttpOnly cookies; only a hash is stored. Sessions expire after seven days. A reset deletes the workspace, sources, approvals, publications, jobs, and events via foreign-key cascades. Public links intentionally stop working after reset. Anonymous sessions are appropriate for fictional demos, not real organization authorization.
+Sessions use random HttpOnly cookies; only a hash is stored. Sessions expire after seven days. A reset deletes the workspace, sources (including original uploaded PDFs), approvals, publications, jobs, and events via foreign-key cascades. Public links intentionally stop working after reset. Anonymous sessions are appropriate for fictional demos, not real organization authorization.
+
+
+## Upgrade and backup
+
+The database initializer adds the program configuration column and documents table to existing databases without deleting existing workspaces. Back up before upgrading: use SQLite's online backup API (not a raw copy of only the main file while WAL is active). Restore to an isolated path first and run the complete smoke flow before serving traffic. No scheduled backup or production restore policy is configured by this demo.
+
+PDF extraction runs in a separate process with an eight-second wall timeout and five-second CPU limit. Linux additionally limits the parser address space to 512 MB. Only two parsers run concurrently; storage is capped at ten PDFs per workspace and 500 MB total. Configure a matching reverse-proxy body-size limit and disk monitoring on the host. These parser limits do not certify arbitrary untrusted uploads as harmless.

@@ -14,7 +14,7 @@ ServiceSignal explores this workflow for a fictional community center's Digital 
 
 ## What it does
 
-The coordinator pastes a change, reviews source evidence, supplies missing details, and approves the exact affected sessions and destinations. The background worker publishes the controlled website and independently reads its rendered facts back. It prepares an English printable notice and permanent QR link, while tracking simulated partner work and manual print replacement separately.
+The coordinator configures a program, pastes a change or uploads a text-based PDF, reviews source evidence, supplies missing details, and approves the exact affected sessions and destinations. The background worker publishes the controlled website and independently reads its rendered facts back. It prepares an English printable notice and permanent QR link, while tracking simulated partner work and manual print replacement separately.
 
 Before the final affected session ends, the workflow requests a new decision. If no new arrangement is approved, it publishes the previously approved unconfirmed-state notice. It never silently restores a potentially outdated venue.
 
@@ -28,9 +28,9 @@ The worker verifies visible rendered facts after HTTP publication. A later misma
 
 The local end-to-end publication, read-back, PDFs, QR link, manual/simulated states, and expiry workflow are implemented and tested. The deterministic release suite passes; see `docs/VERIFICATION.md` for the exact recorded result.
 
-**Do not submit this draft as a claim of successful live AI execution yet.** The SDK integration reached the configured providers, but Bedrock denied invocation permission and Anthropic rejected the call for insufficient account credit. A successful live smoke run and a working live-agent recording are required before representing the project as a demonstrated Strands agent entry.
+**Do not submit this draft as a claim of successful live AI execution yet.** The SDK integration supports OpenAI, Anthropic, and Bedrock through Strands. The OpenAI SDK contract test passes with a local simulated HTTP response; a funded OpenAI key remains unconfigured. The earlier live checks reached the other providers, but Bedrock denied invocation permission and Anthropic rejected the call for insufficient account credit. A successful live smoke run and a working live-agent recording are required before representing the project as a demonstrated Strands agent entry.
 
-No real partner integration, real resident usage, measured time savings, or avoided trips are claimed. One program, one active notice, English pasted text, and four registered surfaces define this prototype.
+No real partner integration, real resident usage, measured time savings, or avoided trips are claimed. One configurable program, one active notice, English text/PDF intake, and four registered surfaces define this prototype.
 
 ## Originality and next steps
 
@@ -45,7 +45,7 @@ Official deadline: **September 14, 2026, 5 p.m. PDT / 7 p.m. CDT / September 15,
 | Runnable source, README, MIT license | Prepared locally |
 | Architecture diagram | `docs/architecture.svg` |
 | Working controlled publication and verification | Implemented; see verification evidence |
-| Live Strands execution | Blocked by provider permissions/credit; not passed |
+| Live Strands execution | OpenAI key pending; earlier Bedrock permission/Anthropic credit failures; live smoke not passed |
 | Public repository URL | https://github.com/ankitlade12/servicesignal-agents-for-humans |
 | Persistent hosted demo | Hosting account/destination still required |
 | Demo video | `artifacts/guided-walkthrough.mp4`, narrated guided demo, 61.1 seconds; must include live execution before submission |
